@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Setor Gmail - Admin Dashboard (admin.setorgmail.com)
 
-## Getting Started
+Dashboard resmi Administrator untuk platform **Setor Gmail** yang terhubung langsung ke database Supabase dan otentikasi yang sama dengan aplikasi utama Setor Gmail.
 
-First, run the development server:
+---
+
+## 🚀 Fitur Lengkap
+
+### 1. Sistem Autentikasi & Admin Guard
+- **Halaman Login Khusus (`/login`)**: Mendukung login dengan Google OAuth dan Email & Password admin.
+- **Admin Guard & Middleware Layout**: Memvalidasi hak akses admin berdasarkan kolom `role: 'Admin'` di tabel `profiles` Supabase dan daftar whitelist email administrator. Pengguna non-admin secara otomatis dicegah dengan pesan peringatan keamanan dan opsi keluar akun.
+
+### 2. Dashboard Overview (`/`)
+- Ringkasan live metric:
+  - **Total Pengguna Terdaftar**
+  - **Total Saldo Beredar & Akumulasi Penarikan**
+  - **Status Penarikan Saldo Pending**
+  - **Tiket Bantuan & Laporan Telegram Aktif**
+- Tabel cuplikan tiket bantuan terbaru, transaksi mutasi terbaru, dan pengguna baru bergabung.
+- Quick action button untuk input saldo cepat ke pengguna sasaran.
+
+### 3. Manajemen Pengguna (`/users`)
+- Tabel data pengguna lengkap dengan Avatar, Nama, Email, Role, Nomor DANA, Saldo Dompet, dan Tanggal Bergabung.
+- **Edit Saldo Manual**: Modal untuk menambah (+), memotong (-), atau menetapkan (=) saldo pengguna secara langsung. Mutasi saldo otomatis tercatat di tabel `transactions`.
+- **Ubah Role**: Beralih antara hak akses `Admin` dan `User`.
+- **Blokir / Buka Blokir**: Menangguhkan akses akun pengguna.
+- **Hapus Akun**: Penghapusan akun permanen dari Supabase Auth dan tabel relasional.
+
+### 4. Manajemen Transaksi & Saldo (`/transactions`)
+- Riwayat transaksi gabungan: Penarikan Saldo (`withdrawals`), Setoran (`deposits`), dan Mutasi Saldo (`transactions`).
+- Filter status: Pending, Selesai (Success), dan Gagal/Ditolak (Failed).
+- **Verifikasi Penarikan**: Admin dapat menyetujui transaksi atau menolak penarikan (dengan fitur otomatis refund saldo ke dompet pengguna jika ditolak).
+- **Input Transaksi Manual**: Admin dapat memberikan saldo/deposit langsung ke pengguna manapun.
+
+### 5. Pusat Tiket Bantuan & Telegram (`/tickets`)
+- Integrasi tiket bantuan pengguna dari web dan laporan kendala yang masuk dari Bot Telegram.
+- Filter status: Baru (Open), Sedang Diproses (In Progress), Selesai (Resolved), dan Ditolak (Closed).
+- **Detail Tiket & Lampiran**: Melihat keluhan lengkap, nomor DANA pengirim, dan file lampiran bukti screenshot.
+- **Fitur Balas Tiket & Telegram Forwarding**: Admin dapat menulis tanggapan balasan yang otomatis tersimpan di riwayat tiket (`ticket_replies`) dan secara real-time mengirimkan pesan balasan ke Bot Telegram via Telegram Bot API.
+
+---
+
+## 🛠️ Konfigurasi Environment (`.env.local` & `.dev.vars`)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=https://kdjoeeehyahdgwgsfyal.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_...
+
+# Integrasi Telegram Bot
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_telegram_chat_id
+
+# Admin Email Whitelist
+ADMIN_EMAILS=komangabi26@gmail.com,komangdev7@gmail.com
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 💻 Menjalankan Secara Lokal
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Jalankan dev server Next.js
+npm run dev
 
-## Learn More
+# Jalankan build produksi
+npm run build
 
-To learn more about Next.js, take a look at the following resources:
+# Preview di environment Cloudflare Worker
+npm run preview
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Deploy ke Cloudflare Workers
+npm run deploy
+```
