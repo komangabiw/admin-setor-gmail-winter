@@ -52,7 +52,7 @@ TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_CHAT_ID=your_telegram_chat_id
 
 # Admin Email Whitelist
-ADMIN_EMAILS=komangabi26@gmail.com,komangdev7@gmail.com
+ADMIN_EMAILS=komangabiw@gmail.com
 ```
 
 ---

@@ -6,29 +6,17 @@ import { useAdminAuth } from "@/context/admin-auth-context";
 import {
   ShieldCheck,
   Lock,
-  Mail,
   AlertCircle,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Sparkles,
+  Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 export const dynamic = "force-dynamic";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAdmin, isLoading, signInWithGoogle, signInWithPassword } =
-    useAdminAuth();
+  const { user, isAdmin, isLoading, signInWithGoogle } = useAdminAuth();
 
-
-  const [mode, setMode] = useState<"google" | "password">("google");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -37,10 +25,10 @@ function LoginForm() {
     const errorParam = searchParams.get("error");
     if (errorParam === "not_admin") {
       setErrorMessage(
-        "Akun Google Anda berhasil masuk, namun belum terdaftar sebagai Administrator. Hubungi Superadmin untuk mendapatkan hak akses."
+        "Akses ditolak: Akun Google ini bukan Administrator (komangabiw@gmail.com). Silakan gunakan akun admin yang berwenang."
       );
     } else if (errorParam === "unauthorized") {
-      setErrorMessage("Silakan login dengan akun Administrator untuk melanjutkan.");
+      setErrorMessage("Silakan login dengan akun Administrator resmi untuk melanjutkan.");
     }
   }, [searchParams]);
 
@@ -66,38 +54,6 @@ function LoginForm() {
     }
   };
 
-  const handlePasswordLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setErrorMessage("Email dan kata sandi wajib diisi");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMessage(null);
-
-    try {
-      const { error } = await signInWithPassword(email, password);
-      if (error) {
-        setErrorMessage(
-          error.message === "Invalid login credentials"
-            ? "Email atau kata sandi tidak sesuai"
-            : error.message
-        );
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Check admin status after login
-      setTimeout(() => {
-        router.push("/");
-      }, 500);
-    } catch (err: any) {
-      setErrorMessage(err?.message || "Gagal masuk");
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden select-none">
       {/* Background Glow Accents */}
@@ -117,7 +73,7 @@ function LoginForm() {
               Admin Portal
             </span>
           </h1>
-          <p className="text-sm text-zinc-400 mt-2">
+          <p className="text-xs text-zinc-400 mt-2">
             Pusat Kontrol & Manajemen admin.setorgmail.com
           </p>
         </div>
@@ -132,52 +88,27 @@ function LoginForm() {
             </div>
           )}
 
-          {/* Mode Switcher Tabs */}
-          <div className="grid grid-cols-2 p-1 bg-zinc-950 rounded-xl border border-zinc-800/80 mb-6">
-            <button
-              type="button"
-              onClick={() => {
-                setMode("google");
-                setErrorMessage(null);
-              }}
-              className={`py-2 text-xs font-medium rounded-lg transition-all ${
-                mode === "google"
-                  ? "bg-zinc-800 text-white shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Google OAuth
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode("password");
-                setErrorMessage(null);
-              }}
-              className={`py-2 text-xs font-medium rounded-lg transition-all ${
-                mode === "password"
-                  ? "bg-zinc-800 text-white shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Email & Sandi
-            </button>
-          </div>
-
-          {/* Tab 1: Google OAuth */}
-          {mode === "google" && (
-            <div className="space-y-4">
-              <p className="text-xs text-zinc-400 text-center leading-relaxed">
-                Masuk menggunakan akun Google Admin yang terdaftar di database Supabase Setor Gmail.
+          {/* Direct Google OAuth Section */}
+          <div className="space-y-4">
+            <div className="text-center space-y-1 mb-2">
+              <h2 className="text-sm font-semibold text-zinc-200">
+                Otentikasi Administrator
+              </h2>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Login khusus akun Google Admin: <span className="text-emerald-400 font-mono font-medium">komangabiw@gmail.com</span>
               </p>
+            </div>
 
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 font-semibold text-sm transition-all shadow-md active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-              >
-                {/* Google "G" SVG */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={isSubmitting}
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 font-semibold text-sm transition-all shadow-md active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin text-zinc-900" />
+              ) : (
+                /* Google "G" SVG */
                 <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
@@ -196,70 +127,16 @@ function LoginForm() {
                     d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                   />
                 </svg>
-                <span>{isSubmitting ? "Menghubungkan..." : "Lanjutkan dengan Google"}</span>
-              </button>
-
-              <div className="pt-2 text-center">
-                <span className="text-[11px] text-zinc-500">
-                  Akses langsung akun admin: komangabi26@gmail.com
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 2: Email & Password */}
-          {mode === "password" && (
-            <form onSubmit={handlePasswordLogin} className="space-y-4">
-              <Input
-                label="Email Admin"
-                type="email"
-                placeholder="admin@setorgmail.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                leftIcon={<Mail className="w-4 h-4" />}
-                required
-              />
-
-              <div className="relative">
-                <Input
-                  label="Kata Sandi"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  leftIcon={<Lock className="w-4 h-4" />}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-8 text-zinc-400 hover:text-zinc-200"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={isSubmitting}
-                className="w-full py-2.5 mt-2 flex items-center justify-center gap-2"
-              >
-                <span>Masuk ke Dashboard</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </form>
-          )}
+              )}
+              <span>{isSubmitting ? "Menghubungkan ke Google..." : "Lanjutkan dengan Google"}</span>
+            </button>
+          </div>
 
           {/* Security Notice */}
           <div className="mt-6 pt-5 border-t border-zinc-800 text-center">
             <p className="text-[11px] text-zinc-400 flex items-center justify-center gap-1.5">
               <Lock className="w-3 h-3 text-emerald-400" />
-              Koneksi terenkripsi & diamankan oleh Supabase Auth
+              Sesi terenkripsi & diproteksi Supabase OAuth
             </p>
           </div>
         </div>
@@ -293,4 +170,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-
