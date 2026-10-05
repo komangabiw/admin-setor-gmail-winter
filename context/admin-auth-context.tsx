@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
+import { getAuthCallbackUrl } from "@/lib/url-helpers";
 
 export interface AdminProfile {
   id: string;
@@ -19,7 +20,7 @@ interface AdminAuthContextType {
   profile: AdminProfile | null;
   isAdmin: boolean;
   isLoading: boolean;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithGoogle: (customRedirectTo?: string) => Promise<{ error: Error | null }>;
   signInWithPassword: (
     email: string,
     pass: string
@@ -127,14 +128,14 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (customRedirectTo?: string) => {
     try {
-      const redirectOrigin =
-        typeof window !== "undefined" ? window.location.origin : "";
+      const callbackUrl = customRedirectTo || getAuthCallbackUrl("/auth/callback");
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${redirectOrigin}/auth/callback`,
+          redirectTo: callbackUrl,
           queryParams: {
             access_type: "offline",
             prompt: "consent",

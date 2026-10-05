@@ -16,10 +16,22 @@ function AuthCallbackContent() {
 
     const processAuth = async () => {
       try {
-        // 1. If PKCE code exists in query params, exchange it
+        // 1. Check for OAuth errors in URL query or hash
         const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get("code");
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const oauthError =
+          urlParams.get("error_description") ||
+          urlParams.get("error") ||
+          hashParams.get("error_description") ||
+          hashParams.get("error");
 
+        if (oauthError) {
+          setErrorMsg(oauthError);
+          return;
+        }
+
+        // 2. If PKCE code exists in query params, exchange it
+        const code = urlParams.get("code");
         if (code) {
           const { error: exchangeErr } =
             await supabase.auth.exchangeCodeForSession(code);
@@ -28,7 +40,7 @@ function AuthCallbackContent() {
           }
         }
 
-        // 2. Get current session (handles both code exchange and hash #access_token)
+        // 3. Get current session (handles both code exchange and hash #access_token)
         const {
           data: { session },
           error: sessionErr,
@@ -79,8 +91,11 @@ function AuthCallbackContent() {
         const data = await res.json();
 
         if (data.isAdmin) {
-          // Authorized Admin -> navigate to dashboard
-          window.location.href = "/";
+          // Authorized Admin -> navigate to intended path or dashboard root
+          const urlParams = new URLSearchParams(window.location.search);
+          const next = urlParams.get("next");
+          const destination = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+          window.location.href = destination;
         } else {
           // Authenticated but not an admin -> sign out and reject
           await supabase.auth.signOut();
