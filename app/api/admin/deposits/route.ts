@@ -8,10 +8,31 @@ export async function GET(req: NextRequest) {
     const filterCategory = searchParams.get("category") || "all";
     const search = searchParams.get("search")?.toLowerCase().trim() || "";
 
-    // 1. Fetch profiles to map users
-    const { data: profiles } = await supabaseAdmin
-      .from("profiles")
-      .select("id, name, email, dana_number");
+    // Build deposits query
+    let depQuery = supabaseAdmin
+      .from("deposits")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (filterStatus !== "all") {
+      depQuery = depQuery.eq("status", filterStatus);
+    }
+    if (filterCategory !== "all") {
+      depQuery = depQuery.eq("category_id", filterCategory);
+    }
+
+    // Parallel fetch profiles, categories, and deposits
+    const [
+      { data: profiles },
+      { data: categories },
+      { data: depositsData, error: depError },
+    ] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, name, email, dana_number"),
+      supabaseAdmin.from("setor_categories").select("*"),
+      depQuery,
+    ]);
+
+    if (depError) throw depError;
 
     const userMap: Record<string, { name: string; email: string; dana: string }> = {};
     (profiles || []).forEach((p) => {
@@ -22,31 +43,10 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // 2. Fetch categories
-    const { data: categories } = await supabaseAdmin
-      .from("setor_categories")
-      .select("*");
-
     const categoryMap: Record<string, any> = {};
     (categories || []).forEach((c) => {
       categoryMap[c.id] = c;
     });
-
-    // 3. Fetch deposits
-    let query = supabaseAdmin
-      .from("deposits")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (filterStatus !== "all") {
-      query = query.eq("status", filterStatus);
-    }
-    if (filterCategory !== "all") {
-      query = query.eq("category_id", filterCategory);
-    }
-
-    const { data: depositsData, error: depError } = await query;
-    if (depError) throw depError;
 
     let items = (depositsData || []).map((d) => {
       const user = userMap[d.user_id] || {

@@ -17,23 +17,34 @@ export async function GET(req: NextRequest) {
       query = query.eq("role", roleFilter);
     }
 
-    const { data: profiles, error: pErr } = await query;
-    if (pErr) throw pErr;
+    // Parallel fetch: profiles, wallets, saved_ewallets, authUsers
+    const [
+      { data: profiles, error: pErr },
+      { data: wallets },
+      { data: ewallets },
+      authUsersRes,
+    ] = await Promise.all([
+      query,
+      supabaseAdmin
+        .from("wallets")
+        .select("id, user_id, balance, total_earned, total_withdrawn, minimum_withdrawal"),
+      supabaseAdmin
+        .from("saved_ewallets")
+        .select("id, user_id, method, account_number, account_name, is_default"),
+      supabaseAdmin.auth.admin
+        .listUsers({ perPage: 1000 })
+        .catch((e) => {
+          console.warn("Could not list auth users for ban/avatar check:", e);
+          return { data: null };
+        }),
+    ]);
 
-    // 2. Fetch all wallets
-    const { data: wallets } = await supabaseAdmin
-      .from("wallets")
-      .select("id, user_id, balance, total_earned, total_withdrawn, minimum_withdrawal");
+    if (pErr) throw pErr;
 
     const walletMap: Record<string, any> = {};
     (wallets || []).forEach((w) => {
       walletMap[w.user_id] = w;
     });
-
-    // 3. Fetch saved ewallets
-    const { data: ewallets } = await supabaseAdmin
-      .from("saved_ewallets")
-      .select("id, user_id, method, account_number, account_name, is_default");
 
     const ewalletMap: Record<string, any[]> = {};
     (ewallets || []).forEach((ew) => {
@@ -41,22 +52,14 @@ export async function GET(req: NextRequest) {
       ewalletMap[ew.user_id].push(ew);
     });
 
-    // 4. Fetch auth users to detect banned status & extract Google profile avatars
     const authUserMap: Record<string, any> = {};
     let bannedMap: Record<string, boolean> = {};
-    try {
-      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({
-        perPage: 1000,
+    if (authUsersRes?.data?.users) {
+      authUsersRes.data.users.forEach((u: any) => {
+        authUserMap[u.id] = u;
+        const isBanned = !!(u.banned_until && new Date(u.banned_until) > new Date());
+        bannedMap[u.id] = isBanned;
       });
-      if (authUsers?.users) {
-        authUsers.users.forEach((u) => {
-          authUserMap[u.id] = u;
-          const isBanned = !!(u.banned_until && new Date(u.banned_until) > new Date());
-          bannedMap[u.id] = isBanned;
-        });
-      }
-    } catch (e) {
-      console.warn("Could not list auth users for ban/avatar check:", e);
     }
 
     // 5. Build referral code map to resolve referrer (upline) names

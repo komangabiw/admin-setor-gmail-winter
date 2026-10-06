@@ -8,10 +8,43 @@ export async function GET(req: NextRequest) {
     const filterStatus = searchParams.get("status") || "all";
     const search = searchParams.get("search")?.toLowerCase().trim() || "";
 
-    // 1. Fetch user map
-    const { data: profiles } = await supabaseAdmin
+    // Build queries
+    const profilesPromise = supabaseAdmin
       .from("profiles")
       .select("id, name, email, dana_number");
+
+    let txPromise: any = Promise.resolve({ data: [] });
+    if (filterType === "all" || filterType === "transaction" || filterType === "deposit" || filterType === "adjustment") {
+      let q = supabaseAdmin
+        .from("transactions")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (filterStatus !== "all") {
+        q = q.eq("status", filterStatus);
+      }
+      txPromise = q;
+    }
+
+    let wdPromise: any = Promise.resolve({ data: [] });
+    if (filterType === "all" || filterType === "withdrawal") {
+      let q = supabaseAdmin
+        .from("withdrawals")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (filterStatus !== "all") {
+        q = q.eq("status", filterStatus);
+      }
+      wdPromise = q;
+    }
+
+    // Parallel fetch
+    const [
+      { data: profiles },
+      { data: txs },
+      { data: wds },
+    ] = await Promise.all([profilesPromise, txPromise, wdPromise]);
 
     const userMap: Record<string, { name: string; email: string; dana: string }> = {};
     (profiles || []).forEach((p) => {
@@ -24,73 +57,47 @@ export async function GET(req: NextRequest) {
 
     const items: any[] = [];
 
-    // 2. Fetch from transactions
-    if (filterType === "all" || filterType === "transaction" || filterType === "deposit" || filterType === "adjustment") {
-      let q = supabaseAdmin
-        .from("transactions")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (filterStatus !== "all") {
-        q = q.eq("status", filterStatus);
-      }
-
-      const { data: txs } = await q;
-      (txs || []).forEach((t) => {
-        items.push({
-          id: t.id,
-          source_table: "transactions",
-          user_id: t.user_id,
-          user_name: userMap[t.user_id]?.name || "Pengguna",
-          user_email: userMap[t.user_id]?.email || "-",
-          type: t.type || "transaction",
-          amount: Number(t.amount) || 0,
-          title: t.title || "Transaksi Saldo",
-          description: t.description || "-",
-          status: t.status || "success",
-          created_at: t.created_at,
-          details: null,
-        });
+    (txs || []).forEach((t: any) => {
+      items.push({
+        id: t.id,
+        source_table: "transactions",
+        user_id: t.user_id,
+        user_name: userMap[t.user_id]?.name || "Pengguna",
+        user_email: userMap[t.user_id]?.email || "-",
+        type: t.type || "transaction",
+        amount: Number(t.amount) || 0,
+        title: t.title || "Transaksi Saldo",
+        description: t.description || "-",
+        status: t.status || "success",
+        created_at: t.created_at,
+        details: null,
       });
-    }
+    });
 
-    // 3. Fetch from withdrawals
-    if (filterType === "all" || filterType === "withdrawal") {
-      let q = supabaseAdmin
-        .from("withdrawals")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (filterStatus !== "all") {
-        q = q.eq("status", filterStatus);
-      }
-
-      const { data: wds } = await q;
-      (wds || []).forEach((w) => {
-        items.push({
-          id: w.id,
-          source_table: "withdrawals",
-          user_id: w.user_id,
-          user_name: userMap[w.user_id]?.name || "Pengguna",
-          user_email: userMap[w.user_id]?.email || "-",
-          type: "withdrawal",
-          amount: Number(w.amount) || 0,
-          title: `Penarikan (${w.method || "DANA"})`,
-          description: `Rekening: ${w.account_number || "-"} a/n ${w.account_name || "-"}`,
-          status: w.status || "pending",
-          created_at: w.created_at,
-          details: {
-            method: w.method,
-            account_number: w.account_number,
-            account_name: w.account_name,
-            tax_fee: w.tax_fee,
-            net_amount: w.net_amount,
-            admin_note: w.admin_note,
-            proof_url: w.proof_url,
-          },
-        });
+    (wds || []).forEach((w: any) => {
+      items.push({
+        id: w.id,
+        source_table: "withdrawals",
+        user_id: w.user_id,
+        user_name: userMap[w.user_id]?.name || "Pengguna",
+        user_email: userMap[w.user_id]?.email || "-",
+        type: "withdrawal",
+        amount: Number(w.amount) || 0,
+        title: `Penarikan (${w.method || "DANA"})`,
+        description: `Rekening: ${w.account_number || "-"} a/n ${w.account_name || "-"}`,
+        status: w.status || "pending",
+        created_at: w.created_at,
+        details: {
+          method: w.method,
+          account_number: w.account_number,
+          account_name: w.account_name,
+          tax_fee: w.tax_fee,
+          net_amount: w.net_amount,
+          admin_note: w.admin_note,
+          proof_url: w.proof_url,
+        },
       });
-    }
+    });
 
     // Sort combined items by created_at desc
     items.sort(

@@ -132,73 +132,61 @@ export default function DepositsPage() {
         </div>
       </div>
 
-      {/* 4 KPI Summary Cards for Gmail Submissions */}
+      {/* 4 KPI Summary Cards for Gmail Submissions - Centered Text & Numbers */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 shadow-sm">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider">Total Setoran</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
-              <Mail className="w-3.5 h-3.5" />
-            </div>
+        {/* Total Setoran */}
+        <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center hover:border-zinc-700/80 transition-all">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-2 shadow-sm">
+            <Mail className="w-4 h-4" />
           </div>
-          <div className="mt-2">
-            <div className="text-xl font-bold text-white tracking-tight">
-              {depositStats.total.toLocaleString("id-ID")}
-            </div>
-            <p className="text-[11px] text-zinc-400 mt-0.5">Semua akun Gmail disetor</p>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Total Setoran</span>
+          <div className="text-2xl font-black text-white tracking-tight mt-1">
+            {depositStats.total.toLocaleString("id-ID")}
           </div>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Semua akun Gmail disetor</p>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 shadow-sm">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider">Diterima (Approved)</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <CheckCircle className="w-3.5 h-3.5" />
-            </div>
+        {/* Diterima (Approved) */}
+        <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center hover:border-zinc-700/80 transition-all">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 shadow-sm">
+            <CheckCircle className="w-4 h-4" />
           </div>
-          <div className="mt-2">
-            <div className="text-xl font-bold text-emerald-400 tracking-tight">
-              {depositStats.accepted.toLocaleString("id-ID")}
-            </div>
-            <p className="text-[11px] text-zinc-400 mt-0.5">Tervalidasi & Reward Cair</p>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Diterima (Approved)</span>
+          <div className="text-2xl font-black text-emerald-400 tracking-tight mt-1">
+            {depositStats.accepted.toLocaleString("id-ID")}
           </div>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Tervalidasi & Reward Cair</p>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 shadow-sm">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider">Menunggu Cek</span>
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
-              <Clock className="w-3.5 h-3.5" />
-            </div>
+        {/* Menunggu Cek */}
+        <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center hover:border-zinc-700/80 transition-all">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-2 shadow-sm">
+            <Clock className="w-4 h-4" />
           </div>
-          <div className="mt-2">
-            <div className="text-xl font-bold text-amber-400 tracking-tight">
-              {depositStats.pending.toLocaleString("id-ID")}
-            </div>
-            <p className="text-[11px] text-zinc-400 mt-0.5">Butuh verifikasi admin</p>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Menunggu Cek</span>
+          <div className="text-2xl font-black text-amber-400 tracking-tight mt-1">
+            {depositStats.pending.toLocaleString("id-ID")}
           </div>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Butuh verifikasi admin</p>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 shadow-sm">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider">Reward Diberikan</span>
-            <div className="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center">
-              <Wallet className="w-3.5 h-3.5" />
-            </div>
+        {/* Reward Diberikan */}
+        <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 shadow-sm flex flex-col items-center justify-center text-center hover:border-zinc-700/80 transition-all">
+          <div className="w-9 h-9 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center mb-2 shadow-sm">
+            <Wallet className="w-4 h-4" />
           </div>
-          <div className="mt-2">
-            <div className="text-xl font-bold text-emerald-400 font-mono tracking-tight">
-              Rp {depositStats.totalAmount.toLocaleString("id-ID")}
-            </div>
-            <p className="text-[11px] text-zinc-400 mt-0.5">Total saldo reward masuk</p>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Reward Diberikan</span>
+          <div className="text-2xl font-black text-emerald-400 font-mono tracking-tight mt-1">
+            Rp {depositStats.totalAmount.toLocaleString("id-ID")}
           </div>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Total saldo reward masuk</p>
         </div>
       </div>
 
-      {/* Filter and Search for Gmails */}
-      <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+      {/* Filter Kategori & Pencarian (Pencarian ditaruh dibawah kategori) */}
+      <div className="space-y-3">
         {/* Category Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto w-full md:w-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto w-full sm:w-max">
           {[
             { label: "Semua Kategori", value: "all" },
             { label: "Gmail Good (Rp 4.500)", value: "good" },
@@ -207,7 +195,7 @@ export default function DepositsPage() {
             <button
               key={tab.value}
               onClick={() => setDepositCategoryFilter(tab.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 depositCategoryFilter === tab.value
                   ? "bg-emerald-600 text-white shadow-sm"
                   : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
@@ -218,29 +206,29 @@ export default function DepositsPage() {
           ))}
         </div>
 
-        {/* Status filter + Search */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto">
+        {/* Search and Status filter - Diletakkan di bawah pilih kategori */}
+        <div className="flex flex-col sm:flex-row gap-2.5 items-center w-full">
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 absolute left-3.5 top-3 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Cari alamat Gmail disetor, nama penyetor, email, atau nomor DANA..."
+              value={depositSearch}
+              onChange={(e) => setDepositSearch(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            />
+          </div>
+
           <select
             value={depositStatusFilter}
             onChange={(e) => setDepositStatusFilter(e.target.value)}
-            className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            className="bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-full sm:w-auto"
           >
-            <option value="all">Semua Status</option>
+            <option value="all">Semua Status ({depositStats.total})</option>
             <option value="pending">Menunggu Verifikasi ({depositStats.pending})</option>
             <option value="accepted">Diterima ({depositStats.accepted})</option>
             <option value="rejected">Ditolak ({depositStats.rejected})</option>
           </select>
-
-          <div className="relative flex-1 md:w-72">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Cari alamat Gmail, penyetor, DANA..."
-              value={depositSearch}
-              onChange={(e) => setDepositSearch(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-            />
-          </div>
         </div>
       </div>
 

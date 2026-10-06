@@ -5,25 +5,45 @@ import { getAdminEmails } from "@/lib/auth-helpers";
 export async function GET(req: NextRequest) {
   const startTime = Date.now();
   try {
-    // 1. Fetch all profiles
-    const { data: profiles, error: pErr } = await supabaseAdmin
-      .from("profiles")
-      .select("id, name, email, role, avatar_url, dana_number, created_at")
-      .order("created_at", { ascending: false });
+    // Parallel fetch: profiles, wallets, tickets, transactions, withdrawals
+    const [
+      { data: profiles, error: pErr },
+      { data: wallets, error: wErr },
+      { data: tickets, error: tErr },
+      { data: transactions, count: txCount },
+      { data: withdrawals, count: wdCount },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("id, name, email, role, avatar_url, dana_number, created_at")
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("wallets")
+        .select("user_id, balance, total_withdrawn, total_earned"),
+      supabaseAdmin
+        .from("support_tickets")
+        .select("id, ticket_code, user_id, category, subject, status, created_at")
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("transactions")
+        .select("id, user_id, type, amount, title, description, status, created_at", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabaseAdmin
+        .from("withdrawals")
+        .select("id, user_id, amount, method, status, created_at, account_name, account_number", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
 
     if (pErr) throw pErr;
+    if (wErr) throw wErr;
+    if (tErr) throw tErr;
 
     const totalUsers = profiles?.length || 0;
     const totalAdmins =
       profiles?.filter((p) => (p.role || "").toLowerCase() === "admin").length || 0;
     const totalMembers = totalUsers - totalAdmins;
-
-    // 2. Fetch all wallets
-    const { data: wallets, error: wErr } = await supabaseAdmin
-      .from("wallets")
-      .select("user_id, balance, total_withdrawn, total_earned");
-
-    if (wErr) throw wErr;
 
     const walletMap: Record<string, { balance: number; total_withdrawn: number; total_earned: number }> = {};
     let totalBalance = 0;
@@ -40,14 +60,6 @@ export async function GET(req: NextRequest) {
       totalEarned += te;
     });
 
-    // 3. Fetch all support tickets
-    const { data: tickets, error: tErr } = await supabaseAdmin
-      .from("support_tickets")
-      .select("id, ticket_code, user_id, category, subject, status, created_at")
-      .order("created_at", { ascending: false });
-
-    if (tErr) throw tErr;
-
     const totalTickets = tickets?.length || 0;
     let activeTickets = 0;
     let resolvedTickets = 0;
@@ -60,20 +72,6 @@ export async function GET(req: NextRequest) {
         resolvedTickets++;
       }
     });
-
-    // 4. Fetch transactions
-    const { data: transactions, count: txCount } = await supabaseAdmin
-      .from("transactions")
-      .select("id, user_id, type, amount, title, description, status, created_at", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    // 5. Fetch withdrawals
-    const { data: withdrawals, count: wdCount } = await supabaseAdmin
-      .from("withdrawals")
-      .select("id, user_id, amount, method, status, created_at, account_name, account_number", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .limit(10);
 
     let pendingWithdrawals = 0;
     let pendingWithdrawalsAmount = 0;
