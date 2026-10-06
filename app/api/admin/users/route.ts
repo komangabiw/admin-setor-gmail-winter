@@ -141,6 +141,16 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Always put Admin role on top, then sort by newest created_at
+    users.sort((a, b) => {
+      const aIsAdmin = a.role === "Admin" ? 1 : 0;
+      const bIsAdmin = b.role === "Admin" ? 1 : 0;
+      if (aIsAdmin !== bIsAdmin) {
+        return bIsAdmin - aIsAdmin; // Admin first
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
     return NextResponse.json({ success: true, users });
   } catch (err: any) {
     console.error("Users GET API error:", err);

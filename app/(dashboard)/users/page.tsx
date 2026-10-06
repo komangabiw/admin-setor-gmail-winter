@@ -54,7 +54,6 @@ export default function UserManagementPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
 
   // Edit Saldo Modal State
   const [saldoModalOpen, setSaldoModalOpen] = useState(false);
@@ -70,12 +69,17 @@ export default function UserManagementPage() {
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
-      if (roleFilter && roleFilter !== "all") params.set("role", roleFilter);
 
       const res = await fetch(`/api/admin/users?${params.toString()}`);
       const json = await res.json();
       if (json.success) {
-        setUsers(json.users || []);
+        const sorted = (json.users || []).sort((a: any, b: any) => {
+          const aIsAdmin = a.role === "Admin" ? 1 : 0;
+          const bIsAdmin = b.role === "Admin" ? 1 : 0;
+          if (aIsAdmin !== bIsAdmin) return bIsAdmin - aIsAdmin;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        setUsers(sorted);
       }
     } catch (err) {
       console.error("Gagal memuat pengguna:", err);
@@ -89,7 +93,7 @@ export default function UserManagementPage() {
       fetchUsers();
     }, 300);
     return () => clearTimeout(timeout);
-  }, [search, roleFilter]);
+  }, [search]);
 
   // Open Edit Saldo
   const handleOpenEditSaldo = (u: any) => {
@@ -264,30 +268,16 @@ export default function UserManagementPage() {
         </Card>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row items-center gap-3">
-        <div className="w-full sm:flex-1 relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-3 text-zinc-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Cari berdasarkan nama, email, e-wallet, kode referral, upline..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-          />
-        </div>
-
-        <div className="w-full sm:w-48">
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-          >
-            <option value="all">Semua Role</option>
-            <option value="Admin">Hanya Admin</option>
-            <option value="User">Hanya Pengguna</option>
-          </select>
-        </div>
+      {/* Search Bar */}
+      <div className="w-full relative">
+        <Search className="w-4 h-4 absolute left-3.5 top-3 text-zinc-400 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Cari berdasarkan nama, email, e-wallet, kode referral, upline..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+        />
       </div>
 
       {/* Table */}
