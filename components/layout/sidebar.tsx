@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Users,
   ArrowLeftRight,
+  Mail,
   MessageSquareText,
   LogOut,
   ShieldCheck,
@@ -34,6 +35,12 @@ const NAV_ITEMS = [
     name: "Transaksi & Saldo",
     href: "/transactions",
     icon: ArrowLeftRight,
+    badge: null,
+  },
+  {
+    name: "Setoran Gmail",
+    href: "/deposits",
+    icon: Mail,
     badge: null,
   },
   {

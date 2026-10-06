@@ -46,6 +46,7 @@ export function Header({
     if (pathname === "/") return { title: "Dashboard", subtitle: "Ringkasan metrik & statistik aktivitas" };
     if (pathname.startsWith("/users")) return { title: "Manajemen Pengguna", subtitle: "Kelola akun pengguna, saldo dompet & hak akses" };
     if (pathname.startsWith("/transactions")) return { title: "Transaksi & Saldo", subtitle: "Pantau setoran, penarikan & mutasi saldo" };
+    if (pathname.startsWith("/deposits")) return { title: "Setoran Gmail", subtitle: "Daftar setoran Gmail & email diterima admin" };
     if (pathname.startsWith("/tickets")) return { title: "Tiket Bantuan & Telegram", subtitle: "Laporan pengguna & tiket dari Bot Telegram" };
     return { title: "Admin Portal", subtitle: "Setor Gmail Backoffice" };
   };
