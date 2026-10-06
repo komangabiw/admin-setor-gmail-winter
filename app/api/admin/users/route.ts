@@ -30,7 +30,19 @@ export async function GET(req: NextRequest) {
       walletMap[w.user_id] = w;
     });
 
-    // 3. Fetch auth users to detect banned status
+    // 3. Fetch saved ewallets
+    const { data: ewallets } = await supabaseAdmin
+      .from("saved_ewallets")
+      .select("id, user_id, method, account_number, account_name, is_default");
+
+    const ewalletMap: Record<string, any[]> = {};
+    (ewallets || []).forEach((ew) => {
+      if (!ewalletMap[ew.user_id]) ewalletMap[ew.user_id] = [];
+      ewalletMap[ew.user_id].push(ew);
+    });
+
+    // 4. Fetch auth users to detect banned status & extract Google profile avatars
+    const authUserMap: Record<string, any> = {};
     let bannedMap: Record<string, boolean> = {};
     try {
       const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({
@@ -38,26 +50,69 @@ export async function GET(req: NextRequest) {
       });
       if (authUsers?.users) {
         authUsers.users.forEach((u) => {
+          authUserMap[u.id] = u;
           const isBanned = !!(u.banned_until && new Date(u.banned_until) > new Date());
           bannedMap[u.id] = isBanned;
         });
       }
     } catch (e) {
-      console.warn("Could not list auth users for ban check:", e);
+      console.warn("Could not list auth users for ban/avatar check:", e);
     }
 
-    // 4. Merge profiles and wallet data
+    // 5. Build referral code map to resolve referrer (upline) names
+    const refCodeToUserMap: Record<string, { id: string; name: string; email: string }> = {};
+    (profiles || []).forEach((p) => {
+      if (p.referral_code) {
+        refCodeToUserMap[p.referral_code] = {
+          id: p.id,
+          name: p.name || p.email?.split("@")[0] || "User",
+          email: p.email || "-",
+        };
+      }
+    });
+
+    // 6. Merge profiles, wallets, ewallets, avatars, and referral data
     let users = (profiles || []).map((p) => {
       const w = walletMap[p.id];
+      const authUser = authUserMap[p.id];
+
+      // Priority for avatar: profile.avatar_url > auth metadata avatar_url > picture
+      const avatarUrl =
+        p.avatar_url ||
+        authUser?.user_metadata?.avatar_url ||
+        authUser?.user_metadata?.picture ||
+        null;
+
+      // E-wallets list
+      const userEwallets = ewalletMap[p.id] ? [...ewalletMap[p.id]] : [];
+      if (p.dana_number && !userEwallets.some((ew) => ew.account_number === p.dana_number)) {
+        userEwallets.unshift({
+          id: `profile-${p.id}`,
+          user_id: p.id,
+          method: "DANA",
+          account_number: p.dana_number,
+          account_name: p.name || null,
+          is_default: userEwallets.length === 0,
+        });
+      }
+
+      // Referrer (upline) info
+      const referredByCode = p.referred_by_code || null;
+      const referrer = referredByCode ? refCodeToUserMap[referredByCode] || null : null;
+
       return {
         id: p.id,
         name: p.name || p.email?.split("@")[0] || "Pengguna",
         email: p.email || "-",
         role: p.role || "User",
-        avatar_url: p.avatar_url,
+        avatar_url: avatarUrl,
         dana_number: p.dana_number,
         whatsapp_channel_url: p.whatsapp_channel_url,
         referral_code: p.referral_code,
+        referred_by_code: referredByCode,
+        referred_by_id: p.referred_by_id,
+        referred_by_user: referrer ? { name: referrer.name, email: referrer.email } : null,
+        ewallets: userEwallets,
         created_at: p.created_at,
         balance: Number(w?.balance || 0),
         total_withdrawn: Number(w?.total_withdrawn || 0),
@@ -68,13 +123,22 @@ export async function GET(req: NextRequest) {
     });
 
     if (search) {
-      users = users.filter(
-        (u) =>
+      users = users.filter((u) => {
+        const matchesBasic =
           u.name.toLowerCase().includes(search) ||
           u.email.toLowerCase().includes(search) ||
           (u.dana_number && u.dana_number.includes(search)) ||
-          (u.referral_code && u.referral_code.toLowerCase().includes(search))
-      );
+          (u.referral_code && u.referral_code.toLowerCase().includes(search)) ||
+          (u.referred_by_code && u.referred_by_code.toLowerCase().includes(search));
+
+        const matchesEwallet = u.ewallets.some(
+          (ew: any) =>
+            ew.account_number?.includes(search) ||
+            ew.method?.toLowerCase().includes(search)
+        );
+
+        return matchesBasic || matchesEwallet;
+      });
     }
 
     return NextResponse.json({ success: true, users });

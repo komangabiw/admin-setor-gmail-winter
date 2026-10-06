@@ -7,24 +7,48 @@ import {
   Filter,
   Wallet,
   Shield,
-  ShieldAlert,
   Ban,
   CheckCircle,
-  Trash2,
-  Edit3,
-  UserCheck,
-  UserX,
   RefreshCw,
-  Plus,
-  AlertCircle,
+  UserCheck,
   CheckCircle2,
   ExternalLink,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Badge, StatusBadge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Select, Textarea } from "@/components/ui/input";
+
+// Branded color mapper for e-wallets
+function getEwalletBadgeStyle(method: string) {
+  const m = (method || "").toUpperCase();
+  if (m === "DANA") {
+    return "bg-sky-500/15 text-sky-400 border-sky-500/30";
+  }
+  if (m === "GOPAY") {
+    return "bg-teal-500/15 text-teal-400 border-teal-500/30";
+  }
+  if (m === "OVO") {
+    return "bg-purple-500/15 text-purple-400 border-purple-500/30";
+  }
+  if (m === "SHOPEEPAY") {
+    return "bg-orange-500/15 text-orange-400 border-orange-500/30";
+  }
+  if (m === "LINKAJA") {
+    return "bg-rose-500/15 text-rose-400 border-rose-500/30";
+  }
+  if (
+    m.includes("BCA") ||
+    m.includes("BRI") ||
+    m.includes("BNI") ||
+    m.includes("MANDIRI") ||
+    m.includes("BANK")
+  ) {
+    return "bg-blue-600/15 text-blue-400 border-blue-500/30";
+  }
+  return "bg-zinc-800 text-zinc-300 border-zinc-700";
+}
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -40,11 +64,6 @@ export default function UserManagementPage() {
   const [saldoNote, setSaldoNote] = useState("");
   const [isUpdatingSaldo, setIsUpdatingSaldo] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
-
-  // Delete User Modal State
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<any>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -117,7 +136,9 @@ export default function UserManagementPage() {
 
       const resJson = await res.json();
       if (resJson.success) {
-        setActionSuccessMsg(`Saldo ${selectedUser.name} berhasil diubah menjadi Rp ${targetBalance.toLocaleString("id-ID")}`);
+        setActionSuccessMsg(
+          `Saldo ${selectedUser.name} berhasil diubah menjadi Rp ${targetBalance.toLocaleString("id-ID")}`
+        );
         fetchUsers();
         setTimeout(() => {
           setSaldoModalOpen(false);
@@ -162,13 +183,13 @@ export default function UserManagementPage() {
     }
   };
 
-  // Toggle Block
+  // Toggle Block User
   const handleToggleBlock = async (u: any) => {
     const willBlock = !u.is_blocked;
     const confirm = window.confirm(
-      willBlock
-        ? `Blokir akun ${u.name || u.email}? Pengguna tidak akan bisa login ke aplikasi.`
-        : `Buka blokir akun ${u.name || u.email}?`
+      `Apakah Anda yakin ingin ${willBlock ? "MEMBLOKIR" : "MEMBUKA BLOKIR"} akun ${
+        u.name || u.email
+      }?`
     );
     if (!confirm) return;
 
@@ -193,31 +214,6 @@ export default function UserManagementPage() {
     }
   };
 
-  // Delete User
-  const handleDeleteUser = async () => {
-    if (!userToDelete) return;
-    setIsDeleting(true);
-    try {
-      const res = await fetch("/api/admin/users", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: userToDelete.id }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setDeleteModalOpen(false);
-        setUserToDelete(null);
-        fetchUsers();
-      } else {
-        alert(json.error || "Gagal menghapus user");
-      }
-    } catch (e: any) {
-      alert(e?.message || "Terjadi kesalahan");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   const totalBalanceAll = users.reduce((acc, u) => acc + (u.balance || 0), 0);
 
   return (
@@ -239,14 +235,14 @@ export default function UserManagementPage() {
           size="sm"
           onClick={() => fetchUsers()}
           isLoading={isLoading}
-          className="flex items-center gap-1.5 self-start sm:self-auto"
+          className="flex items-center gap-1.5"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
           <span>Refresh Pengguna</span>
         </Button>
       </div>
 
-      {/* Summary Chips */}
+      {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4">
           <span className="text-xs text-zinc-400">Total Pengguna Terdaftar</span>
@@ -274,7 +270,7 @@ export default function UserManagementPage() {
           <Search className="w-4 h-4 absolute left-3.5 top-3 text-zinc-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Cari berdasarkan nama, email, nomor DANA, atau kode referral..."
+            placeholder="Cari berdasarkan nama, email, e-wallet, kode referral, upline..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
@@ -301,8 +297,9 @@ export default function UserManagementPage() {
             <thead>
               <tr className="bg-zinc-950/80 border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-3 px-4">Pengguna</th>
-                <th className="py-3 px-4">Kontak / DANA</th>
                 <th className="py-3 px-4">Role</th>
+                <th className="py-3 px-4">Kode Reff / Referral</th>
+                <th className="py-3 px-4">E-Wallet Pengguna</th>
                 <th className="py-3 px-4">Saldo Dompet</th>
                 <th className="py-3 px-4">Status Akun</th>
                 <th className="py-3 px-4">Bergabung</th>
@@ -312,7 +309,7 @@ export default function UserManagementPage() {
             <tbody className="divide-y divide-zinc-800/80 text-zinc-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-zinc-500">
+                  <td colSpan={8} className="py-12 text-center text-zinc-500">
                     <div className="flex flex-col items-center gap-2">
                       <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" />
                       <span>Memuat data pengguna dari Supabase...</span>
@@ -321,7 +318,7 @@ export default function UserManagementPage() {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-zinc-500">
+                  <td colSpan={8} className="py-12 text-center text-zinc-500">
                     Tidak ditemukan data pengguna yang cocok.
                   </td>
                 </tr>
@@ -331,35 +328,42 @@ export default function UserManagementPage() {
                     key={u.id}
                     className="hover:bg-zinc-800/40 transition-colors"
                   >
-                    {/* User profile */}
+                    {/* User profile with Google/uploaded photo */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 flex items-center justify-center font-bold shrink-0">
-                          {(u.name || u.email).charAt(0).toUpperCase()}
+                        {u.avatar_url ? (
+                          <img
+                            src={u.avatar_url}
+                            alt={u.name}
+                            className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = "none";
+                              const fallback = (e.target as HTMLElement).nextElementSibling;
+                              if (fallback) (fallback as HTMLElement).style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 items-center justify-center font-bold text-xs shrink-0 ${
+                            u.avatar_url ? "hidden" : "flex"
+                          }`}
+                        >
+                          {(u.name || u.email || "U").charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-zinc-100 truncate max-w-[180px]">
+                          <p className="font-semibold text-zinc-100 truncate max-w-[170px]">
                             {u.name}
                           </p>
-                          <p className="text-[11px] text-zinc-400 truncate max-w-[180px]">
+                          <p className="text-[11px] text-zinc-400 truncate max-w-[170px]">
                             {u.email}
                           </p>
                         </div>
                       </div>
                     </td>
 
-                    {/* Contact & Dana */}
-                    <td className="py-3.5 px-4 font-mono">
-                      <p className="text-zinc-200">{u.dana_number || "-"}</p>
-                      {u.referral_code && (
-                        <p className="text-[10px] text-zinc-500">
-                          Ref: {u.referral_code}
-                        </p>
-                      )}
-                    </td>
-
-                    {/* Role */}
-                    <td className="py-3.5 px-4">
+                    {/* Role (Sebelah Kiri Kode Reff) */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       {u.role === "Admin" ? (
                         <Badge variant="primary">Admin</Badge>
                       ) : (
@@ -367,8 +371,60 @@ export default function UserManagementPage() {
                       )}
                     </td>
 
-                    {/* Saldo */}
+                    {/* Kode Reff User & Reff Siapa (Upline) */}
                     <td className="py-3.5 px-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-zinc-500 font-medium">Reff:</span>
+                          <span className="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 text-xs">
+                            {u.referral_code || "-"}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-zinc-400 flex items-center gap-1">
+                          <span className="text-zinc-500">Upline:</span>
+                          {u.referred_by_code ? (
+                            <span className="text-zinc-200 font-mono font-medium">
+                              {u.referred_by_code}
+                              {u.referred_by_user ? ` (${u.referred_by_user.name})` : ""}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-600">- (Organik)</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* E-Wallet Pengguna */}
+                    <td className="py-3.5 px-4">
+                      {!u.ewallets || u.ewallets.length === 0 ? (
+                        <span className="text-zinc-600 text-[11px] italic">Belum diatur</span>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {u.ewallets.map((ew: any, idx: number) => (
+                            <div key={`${ew.id || idx}`} className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${getEwalletBadgeStyle(
+                                  ew.method
+                                )}`}
+                              >
+                                {ew.method || "E-WALLET"}
+                              </span>
+                              <span className="font-mono text-zinc-200 font-medium text-xs">
+                                {ew.account_number}
+                              </span>
+                              {ew.account_name && (
+                                <span className="text-[10px] text-zinc-500 truncate max-w-[100px]">
+                                  ({ew.account_name})
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Saldo Dompet */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <div className="font-mono">
                         <span className="font-bold text-emerald-400 text-sm">
                           Rp {Number(u.balance || 0).toLocaleString("id-ID")}
@@ -379,8 +435,8 @@ export default function UserManagementPage() {
                       </div>
                     </td>
 
-                    {/* Status */}
-                    <td className="py-3.5 px-4">
+                    {/* Status Akun */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       {u.is_blocked ? (
                         <Badge variant="danger">Diblokir</Badge>
                       ) : (
@@ -388,8 +444,8 @@ export default function UserManagementPage() {
                       )}
                     </td>
 
-                    {/* Created date */}
-                    <td className="py-3.5 px-4 text-zinc-400">
+                    {/* Bergabung */}
+                    <td className="py-3.5 px-4 text-zinc-400 whitespace-nowrap">
                       {new Date(u.created_at).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "short",
@@ -397,8 +453,8 @@ export default function UserManagementPage() {
                       })}
                     </td>
 
-                    {/* Actions */}
-                    <td className="py-3.5 px-4 text-right">
+                    {/* Aksi Admin (Tanpa Tombol Hapus Pengguna) */}
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         {/* Edit Saldo */}
                         <Button
@@ -406,7 +462,7 @@ export default function UserManagementPage() {
                           size="sm"
                           onClick={() => handleOpenEditSaldo(u)}
                           title="Ubah Saldo Pengguna"
-                          className="px-2 py-1 text-[11px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          className="px-2 py-1 text-[11px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
                         >
                           <Wallet className="w-3.5 h-3.5" />
                           <span>Saldo</span>
@@ -443,20 +499,6 @@ export default function UserManagementPage() {
                             <Ban className="w-3.5 h-3.5" />
                           )}
                         </Button>
-
-                        {/* Delete User */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setUserToDelete(u);
-                            setDeleteModalOpen(true);
-                          }}
-                          title="Hapus Akun Pengguna"
-                          className="px-2 py-1 text-zinc-400 hover:text-rose-400"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -471,8 +513,8 @@ export default function UserManagementPage() {
       <Modal
         isOpen={saldoModalOpen}
         onClose={() => setSaldoModalOpen(false)}
-        title="Kelola Saldo Pengguna"
-        subtitle={`Pengguna: ${selectedUser?.name} (${selectedUser?.email})`}
+        title={`Kelola Saldo: ${selectedUser?.name || "Pengguna"}`}
+        subtitle={`Saldo Saat Ini: Rp ${Number(selectedUser?.balance || 0).toLocaleString("id-ID")}`}
         footer={
           <>
             <Button
@@ -494,69 +536,37 @@ export default function UserManagementPage() {
       >
         <form onSubmit={handleSubmitSaldo} className="space-y-4">
           {actionSuccessMsg && (
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs flex items-center gap-2">
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{actionSuccessMsg}</span>
             </div>
           )}
 
-          {/* Current Balance Card */}
-          <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between">
-            <div>
-              <span className="text-xs text-zinc-500">Saldo Terkini Saat Ini</span>
-              <p className="text-lg font-bold font-mono text-emerald-400">
-                Rp {Number(selectedUser?.balance || 0).toLocaleString("id-ID")}
-              </p>
-            </div>
-            <Badge variant="outline">Wallet ID: {selectedUser?.wallet_id?.slice(0, 8) || "Baru"}</Badge>
-          </div>
-
-          {/* Action Type Selector */}
-          <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-              Metode Penyesuaian Saldo
-            </label>
-            <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "+ Tambah", value: "add" },
+              { label: "- Kurangi", value: "subtract" },
+              { label: "= Set Langsung", value: "set" },
+            ].map((opt) => (
               <button
                 type="button"
-                onClick={() => setSaldoActionType("add")}
-                className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all ${
-                  saldoActionType === "add"
-                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50"
-                    : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                key={opt.value}
+                onClick={() => setSaldoActionType(opt.value as any)}
+                className={`py-2 text-xs font-semibold rounded-xl border transition-all ${
+                  saldoActionType === opt.value
+                    ? "bg-emerald-600 border-emerald-500 text-white shadow-sm"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
                 }`}
               >
-                + Tambah Saldo
+                {opt.label}
               </button>
-              <button
-                type="button"
-                onClick={() => setSaldoActionType("subtract")}
-                className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all ${
-                  saldoActionType === "subtract"
-                    ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
-                    : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
-                }`}
-              >
-                - Kurangi Saldo
-              </button>
-              <button
-                type="button"
-                onClick={() => setSaldoActionType("set")}
-                className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all ${
-                  saldoActionType === "set"
-                    ? "bg-blue-500/20 text-blue-300 border-blue-500/50"
-                    : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
-                }`}
-              >
-                = Set Saldo Pas
-              </button>
-            </div>
+            ))}
           </div>
 
           <Input
             label={
               saldoActionType === "set"
-                ? "Total Saldo Baru (Rp)"
+                ? "Saldo Baru (Rp)"
                 : saldoActionType === "add"
                 ? "Nominal Penambahan (Rp)"
                 : "Nominal Pengurangan (Rp)"
@@ -575,44 +585,6 @@ export default function UserManagementPage() {
             onChange={(e) => setSaldoNote(e.target.value)}
           />
         </form>
-      </Modal>
-
-      {/* Delete User Modal */}
-      <Modal
-        isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        title="Konfirmasi Hapus Pengguna"
-        maxWidth="sm"
-        footer={
-          <>
-            <Button
-              variant="ghost"
-              onClick={() => setDeleteModalOpen(false)}
-              disabled={isDeleting}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDeleteUser}
-              isLoading={isDeleting}
-            >
-              Hapus Permanen
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-3 text-zinc-300 text-sm">
-          <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-2">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-          <p className="text-center">
-            Apakah Anda yakin ingin menghapus akun <b>{userToDelete?.name || userToDelete?.email}</b>?
-          </p>
-          <p className="text-xs text-rose-400 text-center leading-relaxed">
-            Peringatan: Seluruh data pengguna, dompet saldo, riwayat transaksi, dan tiket terkait akan dihapus secara permanen dari Supabase.
-          </p>
-        </div>
       </Modal>
     </div>
   );
