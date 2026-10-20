@@ -6,15 +6,9 @@ import { usePathname } from "next/navigation";
 import { useAdminAuth } from "@/context/admin-auth-context";
 import {
   LayoutDashboard,
-  Users,
-  ArrowLeftRight,
-  Mail,
-  MessageSquareText,
   LogOut,
   ShieldCheck,
   ExternalLink,
-  Database,
-  Menu,
   X,
 } from "lucide-react";
 
@@ -23,30 +17,6 @@ const NAV_ITEMS = [
     name: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
-    badge: null,
-  },
-  {
-    name: "Pengguna",
-    href: "/users",
-    icon: Users,
-    badge: null,
-  },
-  {
-    name: "Transaksi & Saldo",
-    href: "/transactions",
-    icon: ArrowLeftRight,
-    badge: null,
-  },
-  {
-    name: "Setoran Gmail",
-    href: "/deposits",
-    icon: Mail,
-    badge: null,
-  },
-  {
-    name: "Tiket & Telegram",
-    href: "/tickets",
-    icon: MessageSquareText,
     badge: null,
   },
 ];
