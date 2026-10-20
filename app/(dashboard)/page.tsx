@@ -25,6 +25,7 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Select, Textarea } from "@/components/ui/input";
+import { LineChart9 } from "@/components/ui/demo";
 
 export default function DashboardOverviewPage() {
   const [data, setData] = useState<any>(null);
@@ -308,6 +309,9 @@ export default function DashboardOverviewPage() {
           </div>
         </Link>
       </div>
+
+      {/* Revenue & Balance Flow Line Chart */}
+      <LineChart9 />
 
       {/* Main Full-Width Section */}
       <div className="space-y-4">
