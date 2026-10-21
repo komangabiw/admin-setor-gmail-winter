@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAdminAuth } from "@/context/admin-auth-context";
+import Link from "next/link";
 import {
   Menu,
   Bell,
@@ -10,6 +11,7 @@ import {
   LogOut,
   Sparkles,
   Shield,
+  ShieldCheck,
   Search,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -55,15 +57,27 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 sm:px-6 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80">
-      {/* Left side: Hamburger + Page Title */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onMenuClick}
-          className="lg:hidden text-zinc-400 hover:text-zinc-200 p-2 rounded-lg hover:bg-zinc-900 transition-colors"
-          aria-label="Buka Menu"
+      {/* Left side: Brand Logo + Page Title */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 font-bold text-zinc-100 group shrink-0"
         >
-          <Menu className="w-5 h-5" />
-        </button>
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-950/40">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold tracking-tight text-white flex items-center gap-1.5">
+              Setor Gmail
+              <span className="text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                Admin
+              </span>
+            </span>
+            <span className="text-[10px] text-zinc-400">admin.setorgmail.com</span>
+          </div>
+        </Link>
+
+        <div className="h-6 w-px bg-zinc-800 hidden sm:block" />
 
         <div className="flex flex-col">
           <h1 className="text-base sm:text-lg font-bold text-zinc-100 flex items-center gap-2">
