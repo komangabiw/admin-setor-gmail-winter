@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { LineChart9 } from "@/components/ui/demo";
+import { UsersTab } from "@/components/dashboard/users-tab";
 
 export default function DashboardOverviewPage() {
   const [data, setData] = useState<any>(null);
@@ -201,57 +202,8 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto pb-10">
-      {/* Compact Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/70 backdrop-blur border border-zinc-800/80 px-4 py-3 rounded-xl shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-            <Activity className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold text-white tracking-tight">
-                Pusat Kontrol Operasional
-              </h1>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live Supabase
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-400">
-              Semua kontrol aktivitas, saldo, penarikan, tiket, dan pengguna dalam 1 dashboard
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              setTargetUserId("");
-              setBalanceAmount("");
-              setBalanceNote("");
-              setBalanceSuccess(null);
-              setBalanceModalOpen(true);
-            }}
-            className="h-8 px-3 text-xs flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Top-up Saldo</span>
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => fetchStats(false)}
-            isLoading={isRefreshing}
-            className="h-8 px-2.5 text-xs flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            <span>Refresh</span>
-          </Button>
-        </div>
-      </div>
+      {/* Revenue & Balance Flow Line Chart with Refresh Button */}
+      <LineChart9 onRefresh={() => fetchStats(false)} isRefreshing={isRefreshing} />
 
       {/* Action Notification Strip if there are pending withdrawals */}
       {stats.pendingWithdrawals > 0 && (
@@ -275,25 +227,13 @@ export default function DashboardOverviewPage() {
         </div>
       )}
 
-      {/* 4 Compact Metric KPI Cards (Click to switch active tab) */}
+      {/* 4 Compact Metric KPI Cards (Static / Non-clickable) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Total Pengguna */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            setActiveTab("users");
-            scrollToTabs();
-          }}
-          className={`group block p-3.5 rounded-xl border transition-all shadow-sm cursor-pointer text-left ${
-            activeTab === "users"
-              ? "bg-zinc-900 border-blue-500/40 ring-1 ring-blue-500/30"
-              : "bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800 hover:border-zinc-700"
-          }`}
-        >
+        <div className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left">
           <div className="flex items-center justify-between text-zinc-400">
             <span className="text-[11px] font-medium uppercase tracking-wider">Pengguna</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
               <Users className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -307,28 +247,16 @@ export default function DashboardOverviewPage() {
             </div>
             <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
               <span>{stats.totalAdmins} Admin • {stats.totalMembers} Member</span>
-              <span className="text-blue-400 group-hover:translate-x-0.5 transition-transform">Lihat ↓</span>
+              <span className="text-zinc-500 text-[10px]">Lihat ↓</span>
             </div>
           </div>
         </div>
 
         {/* Card 2: Saldo Beredar */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            setActiveTab("transactions");
-            scrollToTabs();
-          }}
-          className={`group block p-3.5 rounded-xl border transition-all shadow-sm cursor-pointer text-left ${
-            activeTab === "transactions"
-              ? "bg-zinc-900 border-emerald-500/40 ring-1 ring-emerald-500/30"
-              : "bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800 hover:border-zinc-700"
-          }`}
-        >
+        <div className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left">
           <div className="flex items-center justify-between text-zinc-400">
             <span className="text-[11px] font-medium uppercase tracking-wider">Saldo Beredar</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
               <Wallet className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -342,28 +270,16 @@ export default function DashboardOverviewPage() {
             </div>
             <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
               <span>Ditarik: Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</span>
-              <span className="text-emerald-400 group-hover:translate-x-0.5 transition-transform">Mutasi ↓</span>
+              <span className="text-zinc-500 text-[10px]">Mutasi ↓</span>
             </div>
           </div>
         </div>
 
         {/* Card 3: Penarikan Pending */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            setActiveTab("withdrawals");
-            scrollToTabs();
-          }}
-          className={`group block p-3.5 rounded-xl border transition-all shadow-sm cursor-pointer text-left ${
-            activeTab === "withdrawals"
-              ? "bg-zinc-900 border-amber-500/40 ring-1 ring-amber-500/30"
-              : "bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800 hover:border-zinc-700"
-          }`}
-        >
+        <div className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left">
           <div className="flex items-center justify-between text-zinc-400">
             <span className="text-[11px] font-medium uppercase tracking-wider">Antrian WD</span>
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
               <ArrowLeftRight className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -386,28 +302,16 @@ export default function DashboardOverviewPage() {
             </div>
             <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
               <span>Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}</span>
-              <span className="text-amber-400 group-hover:translate-x-0.5 transition-transform">Proses ↓</span>
+              <span className="text-zinc-500 text-[10px]">Proses ↓</span>
             </div>
           </div>
         </div>
 
         {/* Card 4: Tiket CS */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            setActiveTab("tickets");
-            scrollToTabs();
-          }}
-          className={`group block p-3.5 rounded-xl border transition-all shadow-sm cursor-pointer text-left ${
-            activeTab === "tickets"
-              ? "bg-zinc-900 border-cyan-500/40 ring-1 ring-cyan-500/30"
-              : "bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800 hover:border-zinc-700"
-          }`}
-        >
+        <div className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left">
           <div className="flex items-center justify-between text-zinc-400">
             <span className="text-[11px] font-medium uppercase tracking-wider">Tiket CS</span>
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
               <MessageSquareText className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -426,14 +330,11 @@ export default function DashboardOverviewPage() {
             </div>
             <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
               <span>{stats.resolvedTickets} Selesai • Total {stats.totalTickets}</span>
-              <span className="text-cyan-400 group-hover:translate-x-0.5 transition-transform">Buka ↓</span>
+              <span className="text-zinc-500 text-[10px]">Buka ↓</span>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Revenue & Balance Flow Line Chart */}
-      <LineChart9 />
 
       {/* Main Full-Width Section (Unified Dashboard Tabs) */}
       <div id="dashboard-tabs-section" className="space-y-4">
@@ -741,66 +642,9 @@ export default function DashboardOverviewPage() {
               )
             )}
 
-            {/* 4. Tab Daftar Pengguna */}
+            {/* 4. Tab Daftar Pengguna (Lengkap dengan Pencarian, Tabel Lengkap, dan Aksi Admin) */}
             {activeTab === "users" && (
-              !data?.recentUsers || data.recentUsers.length === 0 ? (
-                <div className="py-10 text-center text-zinc-500 text-xs">
-                  Tidak ada data pengguna.
-                </div>
-              ) : (
-                <div className="divide-y divide-zinc-800/70">
-                  {data.recentUsers.map((u: any) => (
-                    <div
-                      key={u.id}
-                      className="py-2.5 flex items-center justify-between gap-3 hover:bg-zinc-800/30 px-2 rounded-lg transition-colors"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 flex items-center justify-center font-bold text-xs shrink-0">
-                          {u.name?.charAt(0)?.toUpperCase() || "U"}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-zinc-100 truncate">
-                              {u.name}
-                            </span>
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
-                              (u.role || "").toLowerCase() === "admin"
-                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                : "bg-zinc-800 text-zinc-400 border border-zinc-700/60"
-                            }`}>
-                              {u.role || "Member"}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-zinc-400 truncate">
-                            {u.email}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 shrink-0">
-                        <div className="text-right">
-                          <p className="text-xs font-bold font-mono text-emerald-400">
-                            Rp {Number(u.balance || 0).toLocaleString("id-ID")}
-                          </p>
-                          <p className="text-[10px] text-zinc-500">
-                            WD: Rp {Number(u.total_withdrawn || 0).toLocaleString("id-ID")}
-                          </p>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => openBalanceModalForUser(u.id)}
-                          className="h-7 px-2.5 text-xs bg-zinc-800 hover:bg-emerald-600 hover:text-white border-zinc-700 transition-colors"
-                        >
-                          <PlusCircle className="w-3 h-3 mr-1" />
-                          Isi Saldo
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
+              <UsersTab onUserUpdated={() => fetchStats(false)} />
             )}
           </div>
         </div>
