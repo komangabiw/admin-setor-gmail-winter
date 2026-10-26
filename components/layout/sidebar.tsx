@@ -98,7 +98,7 @@ export function Sidebar({
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold tracking-tight text-white flex items-center gap-1.5">
-                  Setor Gmail
+                  Setor Gmail by Winter
                   <span className="text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20">
                     Admin
                   </span>

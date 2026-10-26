@@ -30,7 +30,7 @@ export default function DashboardOverviewPage() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"transactions" | "withdrawals" | "users">("transactions");
+  const [activeTab, setActiveTab] = useState<"transactions" | "users">("transactions");
 
   // Quick Balance Modal
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
@@ -182,7 +182,7 @@ export default function DashboardOverviewPage() {
           <button
             type="button"
             onClick={() => {
-              setActiveTab("withdrawals");
+              setActiveTab("transactions");
               scrollToTabs();
             }}
             className="text-[11px] font-semibold underline hover:text-white shrink-0 ml-2 cursor-pointer"
@@ -194,7 +194,7 @@ export default function DashboardOverviewPage() {
 
       {/* 3 Metric KPI Cards (Order matches the tabs below) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Card 1: Saldo Beredar (Mutasi Transaksi) */}
+        {/* Card 1: Total Saldo User */}
         <div
           onClick={() => {
             setActiveTab("transactions");
@@ -203,7 +203,7 @@ export default function DashboardOverviewPage() {
           className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left cursor-pointer hover:border-emerald-500/40 hover:bg-zinc-900 transition-all group"
         >
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-emerald-400 transition-colors">Saldo Beredar</span>
+            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-emerald-400 transition-colors">Total Saldo User</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
               <Wallet className="w-3.5 h-3.5" />
             </div>
@@ -222,16 +222,16 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
-        {/* Card 2: Withdraw */}
+        {/* Card 2: Jumlah Penarikan Saldo User */}
         <div
           onClick={() => {
-            setActiveTab("withdrawals");
+            setActiveTab("transactions");
             scrollToTabs();
           }}
           className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left cursor-pointer hover:border-amber-500/40 hover:bg-zinc-900 transition-all group"
         >
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-amber-400 transition-colors">Withdraw</span>
+            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-amber-400 transition-colors">Jumlah Penarikan Saldo User</span>
             <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
               <ArrowLeftRight className="w-3.5 h-3.5" />
             </div>
@@ -289,54 +289,37 @@ export default function DashboardOverviewPage() {
       {/* Main Full-Width Section (Unified Dashboard Tabs) */}
       <div id="dashboard-tabs-section" className="space-y-4">
         <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-          {/* Tab Header */}
+          {/* Tab Header (Merged: Transaksi & Daftar Pengguna) */}
           <div className="flex items-center justify-between border-b border-zinc-800 px-3 pt-2 pb-0 bg-zinc-950/40 overflow-x-auto">
             <div className="flex items-center gap-1">
-              {/* Tab 1: Mutasi Transaksi */}
+              {/* Tab 1: Transaksi (Gabungan Mutasi Transaksi & Withdraw) */}
               <button
                 type="button"
                 onClick={() => setActiveTab("transactions")}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-colors cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-colors cursor-pointer ${
                   activeTab === "transactions"
                     ? "border-emerald-500 text-emerald-400 bg-zinc-900/60"
                     : "border-transparent text-zinc-400 hover:text-zinc-200"
                 }`}
               >
                 <ArrowLeftRight className="w-3.5 h-3.5" />
-                <span>Mutasi Transaksi</span>
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300">
-                  {data?.recentTransactions?.length || 0}
-                </span>
-              </button>
-
-              {/* Tab 2: Withdraw */}
-              <button
-                type="button"
-                onClick={() => setActiveTab("withdrawals")}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-colors cursor-pointer ${
-                  activeTab === "withdrawals"
-                    ? "border-amber-500 text-amber-400 bg-zinc-900/60"
-                    : "border-transparent text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Wallet className="w-3.5 h-3.5" />
-                <span>Withdraw</span>
+                <span>Transaksi</span>
                 {stats.pendingWithdrawals > 0 ? (
                   <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">
-                    {stats.pendingWithdrawals}
+                    {stats.pendingWithdrawals} WD Pending
                   </span>
                 ) : (
-                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-400">
-                    0
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300">
+                    {data?.recentTransactions?.length || 0}
                   </span>
                 )}
               </button>
 
-              {/* Tab 3: Daftar Pengguna */}
+              {/* Tab 2: Daftar Pengguna */}
               <button
                 type="button"
                 onClick={() => setActiveTab("users")}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-colors cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-colors cursor-pointer ${
                   activeTab === "users"
                     ? "border-blue-500 text-blue-400 bg-zinc-900/60"
                     : "border-transparent text-zinc-400 hover:text-zinc-200"
@@ -353,168 +336,187 @@ export default function DashboardOverviewPage() {
 
           {/* Tab Body */}
           <div className="p-3">
-            {/* 1. Tab Mutasi Transaksi */}
+            {/* 1. Tab Transaksi (Gabungan Withdraw & Mutasi Transaksi) */}
             {activeTab === "transactions" && (
-              isLoading ? (
-                <div className="space-y-2 py-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-12 bg-zinc-800/40 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : !data?.recentTransactions || data.recentTransactions.length === 0 ? (
-                <div className="py-10 text-center space-y-1">
-                  <p className="text-xs text-zinc-400 font-medium">Belum ada riwayat transaksi</p>
-                  <p className="text-[11px] text-zinc-500">
-                    Transaksi saldo dan mutasi pengguna akan otomatis tercatat di sini saat dibuat.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-zinc-800/70">
-                  {data.recentTransactions.map((tx: any) => (
-                    <div
-                      key={tx.id}
-                      className="py-2.5 flex items-center justify-between gap-3 hover:bg-zinc-800/30 px-2 rounded-lg transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-zinc-200 truncate">
-                            {tx.title}
-                          </span>
-                          <StatusBadge status={tx.status} />
-                        </div>
-                        <p className="text-[10px] text-zinc-500">
-                          {tx.userName} ({tx.userEmail}) •{" "}
-                          {new Date(tx.created_at).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span
-                          className={`text-xs font-bold font-mono ${
-                            tx.type === "deposit" || tx.type === "manual_credit"
-                              ? "text-emerald-400"
-                              : "text-rose-400"
-                          }`}
-                        >
-                          {tx.type === "deposit" || tx.type === "manual_credit" ? "+" : "-"}
-                          Rp {Number(tx.amount).toLocaleString("id-ID")}
+              <div className="space-y-5">
+                {/* Antrean Penarikan Saldo Pending (jika ada request WD) */}
+                {data?.pendingWithdrawalsList && data.pendingWithdrawalsList.length > 0 && (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3.5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="text-xs font-bold text-amber-300 uppercase tracking-wide">
+                          Permintaan Penarikan Saldo (Withdraw)
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          {data.pendingWithdrawalsList.length} Menunggu Proses
                         </span>
                       </div>
+                      <span className="text-xs text-amber-400 font-semibold font-mono">
+                        Total: Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )
-            )}
 
-            {/* 2. Tab Withdraw */}
-            {activeTab === "withdrawals" && (
-              !data?.pendingWithdrawalsList || data.pendingWithdrawalsList.length === 0 ? (
-                <div className="py-12 text-center space-y-2">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                  <p className="text-xs text-zinc-300 font-semibold">Semua Penarikan Telah Diproses</p>
-                  <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
-                    Saat ini tidak ada penarikan saldo pengguna yang pending.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-zinc-800/70">
-                  {data.pendingWithdrawalsList.map((w: any) => (
-                    <div
-                      key={w.id}
-                      className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2 rounded-lg hover:bg-zinc-800/20 transition-colors"
-                    >
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white">
-                            {w.userName}
-                          </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
-                            Pending
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-300">
-                          <span className="font-semibold text-emerald-400">
-                            {w.method?.toUpperCase()}
-                          </span>
-                          <span>•</span>
-                          <span>A/N: <b>{w.account_name || "-"}</b></span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1 font-mono text-zinc-200 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/60">
-                            {w.account_number || "-"}
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(w.account_number || "", w.id)}
-                              className="text-zinc-400 hover:text-white p-0.5"
-                              title="Salin Nomor Akun"
+                    <div className="divide-y divide-zinc-800/80 bg-zinc-950/70 rounded-lg p-2 border border-zinc-800/80">
+                      {data.pendingWithdrawalsList.map((w: any) => (
+                        <div
+                          key={w.id}
+                          className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2 rounded-lg hover:bg-zinc-800/30 transition-colors"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white">
+                                {w.userName}
+                              </span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
+                                Pending WD
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2.5 text-xs text-zinc-300">
+                              <span className="font-semibold text-emerald-400">
+                                {w.method?.toUpperCase()}
+                              </span>
+                              <span>•</span>
+                              <span>A/N: <b>{w.account_name || "-"}</b></span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1 font-mono text-zinc-200 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/60">
+                                {w.account_number || "-"}
+                                <button
+                                  type="button"
+                                  onClick={() => copyToClipboard(w.account_number || "", w.id)}
+                                  className="text-zinc-400 hover:text-white p-0.5"
+                                  title="Salin Nomor Akun"
+                                >
+                                  {copiedId === w.id ? (
+                                    <Check className="w-3 h-3 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="w-3 h-3" />
+                                  )}
+                                </button>
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-zinc-500">
+                              Diajukan: {new Date(w.created_at).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                            <span className="text-sm font-bold font-mono text-amber-400 sm:text-right mr-1">
+                              Rp {Number(w.amount).toLocaleString("id-ID")}
+                            </span>
+
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              disabled={isProcessingWd === w.id}
+                              onClick={() => {
+                                if (confirm(`Yakin tolak penarikan Rp ${Number(w.amount).toLocaleString("id-ID")} untuk ${w.userName}?`)) {
+                                  handleUpdateWithdrawal(w.id, "rejected");
+                                }
+                              }}
+                              className="h-8 px-2.5 text-xs bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30"
                             >
-                              {copiedId === w.id ? (
-                                <Check className="w-3 h-3 text-emerald-400" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          </span>
+                              <X className="w-3.5 h-3.5 mr-1" />
+                              Tolak
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              isLoading={isProcessingWd === w.id}
+                              onClick={() => {
+                                if (confirm(`Setujui dan konfirmasi transfer penarikan Rp ${Number(w.amount).toLocaleString("id-ID")} ke ${w.account_name} (${w.account_number})?`)) {
+                                  handleUpdateWithdrawal(w.id, "success");
+                                }
+                              }}
+                              className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
+                            >
+                              <Check className="w-3.5 h-3.5 mr-1" />
+                              Setujui
+                            </Button>
+                          </div>
                         </div>
-                        <p className="text-[10px] text-zinc-500">
-                          Diajukan: {new Date(w.created_at).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
-                        <span className="text-sm font-bold font-mono text-amber-400 sm:text-right mr-1">
-                          Rp {Number(w.amount).toLocaleString("id-ID")}
-                        </span>
-
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          disabled={isProcessingWd === w.id}
-                          onClick={() => {
-                            if (confirm(`Yakin tolak penarikan Rp ${Number(w.amount).toLocaleString("id-ID")} untuk ${w.userName}?`)) {
-                              handleUpdateWithdrawal(w.id, "rejected");
-                            }
-                          }}
-                          className="h-8 px-2.5 text-xs bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30"
-                        >
-                          <X className="w-3.5 h-3.5 mr-1" />
-                          Tolak
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          isLoading={isProcessingWd === w.id}
-                          onClick={() => {
-                            if (confirm(`Setujui dan konfirmasi transfer penarikan Rp ${Number(w.amount).toLocaleString("id-ID")} ke ${w.account_name} (${w.account_number})?`)) {
-                              handleUpdateWithdrawal(w.id, "success");
-                            }
-                          }}
-                          className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
-                        >
-                          <Check className="w-3.5 h-3.5 mr-1" />
-                          Setujui
-                        </Button>
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                {/* Bagian Riwayat Mutasi & Transaksi */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                      Riwayat Transaksi & Mutasi Saldo
+                    </span>
+                    <span className="text-[11px] text-zinc-500">
+                      {data?.recentTransactions?.length || 0} Transaksi Terakhir
+                    </span>
+                  </div>
+
+                  {isLoading ? (
+                    <div className="space-y-2 py-2">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-12 bg-zinc-800/40 rounded-lg animate-pulse" />
+                      ))}
+                    </div>
+                  ) : !data?.recentTransactions || data.recentTransactions.length === 0 ? (
+                    <div className="py-10 text-center space-y-1">
+                      <p className="text-xs text-zinc-400 font-medium">Belum ada riwayat transaksi</p>
+                      <p className="text-[11px] text-zinc-500">
+                        Transaksi saldo dan mutasi pengguna akan otomatis tercatat di sini saat dibuat.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-zinc-800/70">
+                      {data.recentTransactions.map((tx: any) => (
+                        <div
+                          key={tx.id}
+                          className="py-2.5 flex items-center justify-between gap-3 hover:bg-zinc-800/30 px-2 rounded-lg transition-colors"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-zinc-200 truncate">
+                                {tx.title}
+                              </span>
+                              <StatusBadge status={tx.status} />
+                            </div>
+                            <p className="text-[10px] text-zinc-500">
+                              {tx.userName} ({tx.userEmail}) •{" "}
+                              {new Date(tx.created_at).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span
+                              className={`text-xs font-bold font-mono ${
+                                tx.type === "deposit" || tx.type === "manual_credit"
+                                  ? "text-emerald-400"
+                                  : "text-rose-400"
+                              }`}
+                            >
+                              {tx.type === "deposit" || tx.type === "manual_credit" ? "+" : "-"}
+                              Rp {Number(tx.amount).toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )
+              </div>
             )}
 
-            {/* 4. Tab Daftar Pengguna (Lengkap dengan Pencarian, Tabel Lengkap, dan Aksi Admin) */}
+            {/* 2. Tab Daftar Pengguna */}
             {activeTab === "users" && (
               <UsersTab onUserUpdated={() => fetchStats(false)} />
             )}

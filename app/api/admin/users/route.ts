@@ -245,8 +245,8 @@ export async function PATCH(req: NextRequest) {
       });
     }
 
-    // Aksi 2 & 3: Proteksi agar tidak bisa memblokir atau mengubah role sesama admin
-    if (action === "toggle_role" || action === "toggle_block") {
+    // Proteksi agar tidak bisa memblokir sesama admin
+    if (action === "toggle_block") {
       const { data: targetProfile } = await supabaseAdmin
         .from("profiles")
         .select("role")
@@ -255,32 +255,18 @@ export async function PATCH(req: NextRequest) {
 
       if (targetProfile?.role === "Admin") {
         return NextResponse.json(
-          { success: false, error: "Tidak dapat mengubah role atau memblokir sesama Admin" },
+          { success: false, error: "Tidak dapat memblokir sesama Admin" },
           { status: 403 }
         );
       }
     }
 
-    // Aksi 2: Ubah Role (Admin / User)
+    // Proteksi: Admin tidak bisa mengubah role pengguna menjadi admin
     if (action === "toggle_role") {
-      const { role } = body;
-      const targetRole = role === "Admin" ? "Admin" : "User";
-
-      const { error: roleErr } = await supabaseAdmin
-        .from("profiles")
-        .update({
-          role: targetRole,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userId);
-
-      if (roleErr) throw roleErr;
-
-      return NextResponse.json({
-        success: true,
-        message: `Role pengguna berhasil diubah menjadi ${targetRole}`,
-        role: targetRole,
-      });
+      return NextResponse.json(
+        { success: false, error: "Admin tidak dapat mengubah role pengguna menjadi Admin" },
+        { status: 403 }
+      );
     }
 
     // Aksi 3: Blokir / Buka Blokir

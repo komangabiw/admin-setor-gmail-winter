@@ -55,7 +55,7 @@ export function Header() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold tracking-tight text-white flex items-center gap-1.5">
-              Setor Gmail
+              Setor Gmail by Winter
               <span className="text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20">
                 Admin
               </span>
@@ -141,18 +141,18 @@ export function Header() {
             </div>
           </div>
 
-          {/* Profile Pill & Logout */}
-          <div className="flex items-center gap-2 pl-2 border-l border-zinc-800">
+          {/* Profile Pill & Logout (Nama & Email di sebelah kiri tombol logout) */}
+          <div className="flex items-center gap-2.5 pl-2 border-l border-zinc-800">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
                 {(profile?.name || user?.email || "A").charAt(0).toUpperCase()}
               </div>
-              <div className="hidden xl:flex flex-col text-left">
-                <span className="text-xs font-semibold text-zinc-200 leading-tight">
+              <div className="flex flex-col text-left max-w-[120px] sm:max-w-[200px]">
+                <span className="text-xs font-semibold text-zinc-200 leading-tight truncate">
                   {profile?.name || "Admin"}
                 </span>
-                <span className="text-[10px] text-emerald-400 leading-tight">
-                  Administrator
+                <span className="text-[10px] text-zinc-400 leading-tight truncate">
+                  {user?.email || profile?.email || "admin@setorgmail.com"}
                 </span>
               </div>
             </div>
@@ -160,7 +160,7 @@ export function Header() {
             <button
               onClick={() => signOut()}
               title="Keluar dari sesi admin"
-              className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-zinc-900 rounded-lg transition-colors"
+              className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-zinc-900 rounded-lg transition-colors shrink-0"
               aria-label="Logout"
             >
               <LogOut className="w-4 h-4" />

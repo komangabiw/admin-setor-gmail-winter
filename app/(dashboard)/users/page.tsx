@@ -6,7 +6,6 @@ import {
   Search,
   Filter,
   Wallet,
-  Shield,
   Ban,
   CheckCircle,
   RefreshCw,
@@ -162,38 +161,6 @@ export default function UserManagementPage() {
     }
   };
 
-  // Toggle Role (Admin / User)
-  const handleToggleRole = async (u: any) => {
-    if (u.role === "Admin") {
-      alert("Tidak dapat mengubah role sesama Admin");
-      return;
-    }
-    const targetRole = u.role === "Admin" ? "User" : "Admin";
-    const confirm = window.confirm(
-      `Apakah Anda yakin ingin mengubah role ${u.name || u.email} menjadi ${targetRole}?`
-    );
-    if (!confirm) return;
-
-    try {
-      const res = await fetch("/api/admin/users", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "toggle_role",
-          userId: u.id,
-          role: targetRole,
-        }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        fetchUsers();
-      } else {
-        alert(json.error || "Gagal mengubah role");
-      }
-    } catch (e: any) {
-      alert(e?.message || "Terjadi kesalahan");
-    }
-  };
 
   // Toggle Block User
   const handleToggleBlock = async (u: any) => {
@@ -506,18 +473,6 @@ export default function UserManagementPage() {
                           <span>Saldo</span>
                         </Button>
 
-                        {/* Toggle Role (Hanya untuk non-admin) */}
-                        {u.role !== "Admin" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleRole(u)}
-                            title="Jadikan Admin"
-                            className="px-2 py-1 text-zinc-400 hover:text-blue-400"
-                          >
-                            <Shield className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
 
                         {/* Toggle Block (Hanya untuk non-admin) */}
                         {u.role !== "Admin" && (
