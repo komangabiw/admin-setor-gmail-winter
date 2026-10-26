@@ -12,6 +12,7 @@ import {
   Clock,
   AlertTriangle,
   Activity,
+  TrendingUp,
   Check,
   X,
   Copy,
@@ -165,123 +166,214 @@ export default function DashboardOverviewPage() {
     totalTransactionsCount: 0,
   };
 
+  const avgBalance = stats.totalMembers > 0 ? Math.round(stats.totalBalance / stats.totalMembers) : 0;
+  const totalFlow = stats.totalBalance + stats.totalWithdrawn;
+  const memberPercent = stats.totalUsers > 0 ? Math.round((stats.totalMembers / stats.totalUsers) * 100) : 0;
+
   return (
     <div className="space-y-4 max-w-7xl mx-auto pb-10">
       {/* Revenue & Balance Flow Line Chart with Refresh Button */}
       <LineChart9 onRefresh={() => fetchStats(false)} isRefreshing={isRefreshing} />
 
-      {/* Action Notification Strip if there are pending withdrawals */}
-      {stats.pendingWithdrawals > 0 && (
-        <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>
-              <b>{stats.pendingWithdrawals} Penarikan Saldo</b> menunggu persetujuan (Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")})
-            </span>
+      {/* 1 Kolom Penuh: Ringkasan Insight Likuiditas & Ekosistem Pengguna (Menggantikan 3 kolom terpisah) */}
+      <div className="rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900/90 to-zinc-950 p-4 sm:p-5 shadow-sm space-y-4">
+        {/* Header Insight */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800/80">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white tracking-tight">
+                  Ringkasan Likuiditas & Ekosistem Pengguna
+                </h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  Live Insight
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                Monitoring total saldo beredar, antrean pencairan dana, dan distribusi komunitas member.
+              </p>
+            </div>
           </div>
-          <button
-            type="button"
+
+          <div className="flex items-center gap-2 shrink-0">
+            {stats.pendingWithdrawals > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab("transactions");
+                  scrollToTabs();
+                }}
+                className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 animate-bounce shrink-0" />
+                <span>{stats.pendingWithdrawals} Antrean WD Butuh Diproses</span>
+                <span className="font-mono text-white bg-amber-500/30 px-1.5 py-0.2 rounded text-[10px]">
+                  Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}
+                </span>
+              </button>
+            ) : (
+              <div className="px-3 py-1 rounded-xl bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-medium">Semua Penarikan Telah Diproses</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 3 Segmen Insight Utama dalam 1 Kolom Terpadu */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          {/* Segmen 1: Total Saldo User */}
+          <div
             onClick={() => {
               setActiveTab("transactions");
               scrollToTabs();
             }}
-            className="text-[11px] font-semibold underline hover:text-white shrink-0 ml-2 cursor-pointer"
+            className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 hover:border-emerald-500/40 hover:bg-zinc-900/60 transition-all cursor-pointer group"
           >
-            Proses Sekarang →
-          </button>
-        </div>
-      )}
-
-      {/* 3 Metric KPI Cards (Order matches the tabs below) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Card 1: Total Saldo User */}
-        <div
-          onClick={() => {
-            setActiveTab("transactions");
-            scrollToTabs();
-          }}
-          className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left cursor-pointer hover:border-emerald-500/40 hover:bg-zinc-900 transition-all group"
-        >
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-emerald-400 transition-colors">Total Saldo User</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <Wallet className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between text-zinc-400 mb-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 group-hover:text-emerald-400 transition-colors flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+                Total Saldo User
+              </span>
+              <span className="text-[10px] text-zinc-500 font-mono group-hover:text-zinc-300">
+                Lihat Transaksi →
+              </span>
             </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-xl sm:text-2xl font-bold text-emerald-400 tracking-tight">
+
+            <div className="text-2xl font-bold text-emerald-400 tracking-tight font-mono">
               {isLoading ? (
-                <div className="w-24 h-7 bg-zinc-800 animate-pulse rounded" />
+                <div className="w-28 h-8 bg-zinc-800 animate-pulse rounded" />
               ) : (
                 `Rp ${stats.totalBalance.toLocaleString("id-ID")}`
               )}
             </div>
-            <div className="mt-1.5 text-[11px] text-zinc-400">
-              <span>Ditarik: Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Card 2: Jumlah Penarikan Saldo User */}
-        <div
-          onClick={() => {
-            setActiveTab("transactions");
-            scrollToTabs();
-          }}
-          className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left cursor-pointer hover:border-amber-500/40 hover:bg-zinc-900 transition-all group"
-        >
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-amber-400 transition-colors">Jumlah Penarikan Saldo User</span>
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
-              <ArrowLeftRight className="w-3.5 h-3.5" />
+            <div className="mt-2.5 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-[11px] text-zinc-400">
+              <span>Sudah Ditarik: <b className="text-zinc-200 font-mono">Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</b></span>
+              <span>Rata-rata: <b className="text-emerald-300 font-mono">Rp {avgBalance.toLocaleString("id-ID")}</b></span>
             </div>
           </div>
-          <div className="mt-2">
-            <div className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-1.5">
+
+          {/* Segmen 2: Jumlah Penarikan Saldo User */}
+          <div
+            onClick={() => {
+              setActiveTab("transactions");
+              scrollToTabs();
+            }}
+            className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 hover:border-amber-500/40 hover:bg-zinc-900/60 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center justify-between text-zinc-400 mb-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                <ArrowLeftRight className="w-3.5 h-3.5 text-amber-400" />
+                Jumlah Penarikan Saldo User
+              </span>
+              <span className="text-[10px] text-zinc-500 font-mono group-hover:text-zinc-300">
+                {stats.pendingWithdrawals > 0 ? "Proses WD →" : "Detail →"}
+              </span>
+            </div>
+
+            <div className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
               {isLoading ? (
-                <div className="w-12 h-7 bg-zinc-800 animate-pulse rounded" />
+                <div className="w-16 h-8 bg-zinc-800 animate-pulse rounded" />
               ) : (
                 <>
-                  <span>{stats.pendingWithdrawals}</span>
-                  {stats.pendingWithdrawals > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
-                      Pending
+                  <span className="font-mono">{stats.pendingWithdrawals}</span>
+                  {stats.pendingWithdrawals > 0 ? (
+                    <span className="text-[11px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full animate-pulse">
+                      Pending Approval
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded-full">
+                      Antrean Kosong
                     </span>
                   )}
                 </>
               )}
             </div>
-            <div className="mt-1.5 text-[11px] text-zinc-400">
-              <span>Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}</span>
+
+            <div className="mt-2.5 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-[11px] text-zinc-400">
+              <span>Nominal Pending: <b className="text-amber-400 font-mono">Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}</b></span>
+              <span>Total Sukses: <b className="text-zinc-200 font-mono">Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</b></span>
+            </div>
+          </div>
+
+          {/* Segmen 3: Total Pengguna */}
+          <div
+            onClick={() => {
+              setActiveTab("users");
+              scrollToTabs();
+            }}
+            className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 hover:border-blue-500/40 hover:bg-zinc-900/60 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center justify-between text-zinc-400 mb-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-blue-400" />
+                Total Pengguna
+              </span>
+              <span className="text-[10px] text-zinc-500 font-mono group-hover:text-zinc-300">
+                Kelola User →
+              </span>
+            </div>
+
+            <div className="text-2xl font-bold text-white tracking-tight font-mono">
+              {isLoading ? (
+                <div className="w-20 h-8 bg-zinc-800 animate-pulse rounded" />
+              ) : (
+                `${stats.totalUsers.toLocaleString("id-ID")} Akun`
+              )}
+            </div>
+
+            <div className="mt-2.5 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-[11px] text-zinc-400">
+              <span>Member: <b className="text-zinc-200">{stats.totalMembers}</b></span>
+              <span>Admin: <b className="text-blue-400">{stats.totalAdmins}</b></span>
+              <span>Rasio: <b className="text-emerald-400">{memberPercent}% Member</b></span>
             </div>
           </div>
         </div>
 
-        {/* Card 3: Total Pengguna */}
-        <div
-          onClick={() => {
-            setActiveTab("users");
-            scrollToTabs();
-          }}
-          className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left cursor-pointer hover:border-blue-500/40 hover:bg-zinc-900 transition-all group"
-        >
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-blue-400 transition-colors">Pengguna</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
-              <Users className="w-3.5 h-3.5" />
-            </div>
+        {/* Insight Likuiditas & Baris Aksi Pintar */}
+        <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2 text-zinc-300">
+            <span className="flex h-2 w-2 relative shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-zinc-400 text-[11px]">
+              <b className="text-zinc-200">Kesehatan Likuiditas Kas:</b> Total perputaran dana pengguna mencapai{" "}
+              <b className="text-emerald-400 font-mono">
+                Rp {totalFlow.toLocaleString("id-ID")}
+              </b>{" "}
+              {stats.pendingWithdrawals > 0
+                ? `— Perlu memproses ${stats.pendingWithdrawals} penarikan saldo (Rp ${stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}) segera.`
+                : "— Semua penarikan tuntas dan saldo dompet beroperasi normal."}
+            </span>
           </div>
-          <div className="mt-2">
-            <div className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              {isLoading ? (
-                <div className="w-16 h-7 bg-zinc-800 animate-pulse rounded" />
-              ) : (
-                stats.totalUsers.toLocaleString("id-ID")
-              )}
-            </div>
-            <div className="mt-1.5 text-[11px] text-zinc-400">
-              <span>{stats.totalAdmins} Admin • {stats.totalMembers} Member</span>
-            </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("transactions");
+                scrollToTabs();
+              }}
+              className="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium underline cursor-pointer"
+            >
+              Buka Transaksi
+            </button>
+            <span className="text-zinc-600">•</span>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("users");
+                scrollToTabs();
+              }}
+              className="text-[11px] text-blue-400 hover:text-blue-300 font-medium underline cursor-pointer"
+            >
+              Kelola Pengguna
+            </button>
           </div>
         </div>
       </div>

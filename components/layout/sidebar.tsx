@@ -289,7 +289,24 @@ export function Sidebar({
           {/* Admin Profile */}
           <div className="flex items-center justify-between px-2 py-1.5 bg-zinc-900/40 rounded-xl">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
+              {profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture ? (
+                <img
+                  src={profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
+                  alt={adminName}
+                  className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0 shadow-sm"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                    const fallback = (e.target as HTMLElement).nextElementSibling;
+                    if (fallback) (fallback as HTMLElement).style.display = "flex";
+                  }}
+                />
+              ) : null}
+              <div
+                className={`w-8 h-8 rounded-full bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 items-center justify-center font-bold text-xs shrink-0 ${
+                  profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture ? "hidden" : "flex"
+                }`}
+              >
                 {adminName.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex flex-col">

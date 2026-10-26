@@ -60,8 +60,17 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setIsAdmin(!!data.isAdmin);
+        const resolvedAvatar =
+          data.profile?.avatar_url ||
+          currentUser.user_metadata?.avatar_url ||
+          currentUser.user_metadata?.picture ||
+          null;
+
         if (data.profile) {
-          setProfile(data.profile);
+          setProfile({
+            ...data.profile,
+            avatar_url: resolvedAvatar,
+          });
         } else {
           setProfile({
             id: currentUser.id,
@@ -72,7 +81,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
               "Administrator",
             email: currentUser.email || null,
             role: data.isAdmin ? "Admin" : "User",
-            avatar_url: currentUser.user_metadata?.avatar_url || null,
+            avatar_url: resolvedAvatar,
           });
         }
       } else {

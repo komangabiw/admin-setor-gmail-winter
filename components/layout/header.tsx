@@ -144,7 +144,24 @@ export function Header() {
           {/* Profile Pill & Logout (Nama & Email di sebelah kiri tombol logout) */}
           <div className="flex items-center gap-2.5 pl-2 border-l border-zinc-800">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
+              {profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture ? (
+                <img
+                  src={profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
+                  alt={profile?.name || "Admin"}
+                  className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0 shadow-sm"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                    const fallback = (e.target as HTMLElement).nextElementSibling;
+                    if (fallback) (fallback as HTMLElement).style.display = "flex";
+                  }}
+                />
+              ) : null}
+              <div
+                className={`w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white items-center justify-center font-bold text-xs shadow-sm shrink-0 ${
+                  profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture ? "hidden" : "flex"
+                }`}
+              >
                 {(profile?.name || user?.email || "A").charAt(0).toUpperCase()}
               </div>
               <div className="flex flex-col text-left max-w-[120px] sm:max-w-[200px]">

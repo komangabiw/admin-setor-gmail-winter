@@ -54,15 +54,30 @@ export async function verifyIsAdmin(
         .eq("id", userId)
         .maybeSingle();
 
+      const { data: authUserData } = await supabaseAdmin.auth.admin.getUserById(userId);
+      const authMeta = authUserData?.user?.user_metadata;
+      const detectedAvatar = authMeta?.avatar_url || authMeta?.picture || null;
+
       if (existingProfile) {
-        profileData = existingProfile;
+        profileData = {
+          ...existingProfile,
+          avatar_url: existingProfile.avatar_url || detectedAvatar,
+        };
+
+        const updates: any = {};
         if (existingProfile.role !== "Admin") {
-          // Update to Admin role
+          updates.role = "Admin";
+          profileData.role = "Admin";
+        }
+        if (!existingProfile.avatar_url && detectedAvatar) {
+          updates.avatar_url = detectedAvatar;
+        }
+        if (Object.keys(updates).length > 0) {
+          updates.updated_at = new Date().toISOString();
           await supabaseAdmin
             .from("profiles")
-            .update({ role: "Admin", updated_at: new Date().toISOString() })
+            .update(updates)
             .eq("id", userId);
-          profileData.role = "Admin";
         }
       } else {
         // Auto-create profile with Admin role
@@ -71,8 +86,9 @@ export async function verifyIsAdmin(
           .insert({
             id: userId,
             email: userEmail,
-            name: "Komang Abiw (Admin)",
+            name: authMeta?.full_name || authMeta?.name || "Komang Abiw (Admin)",
             role: "Admin",
+            avatar_url: detectedAvatar,
           })
           .select()
           .maybeSingle();
