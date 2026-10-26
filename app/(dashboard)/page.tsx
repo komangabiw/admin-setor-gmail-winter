@@ -5,7 +5,6 @@ import {
   Users,
   Wallet,
   ArrowLeftRight,
-  MessageSquareText,
   RefreshCw,
   PlusCircle,
   ShieldCheck,
@@ -31,7 +30,7 @@ export default function DashboardOverviewPage() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"tickets" | "transactions" | "withdrawals" | "users">("tickets");
+  const [activeTab, setActiveTab] = useState<"transactions" | "withdrawals" | "users">("transactions");
 
   // Quick Balance Modal
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
@@ -44,11 +43,6 @@ export default function DashboardOverviewPage() {
   // Withdrawal processing state
   const [isProcessingWd, setIsProcessingWd] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  // Ticket Detail & Status Modal
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
-  const [ticketStatusUpdate, setTicketStatusUpdate] = useState("");
-  const [isUpdatingTicket, setIsUpdatingTicket] = useState(false);
 
   const fetchStats = async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
@@ -151,32 +145,6 @@ export default function DashboardOverviewPage() {
     }
   };
 
-  const handleUpdateTicketStatus = async (newStatus: string) => {
-    if (!selectedTicket) return;
-    setIsUpdatingTicket(true);
-    try {
-      const res = await fetch("/api/admin/tickets", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ticketId: selectedTicket.id,
-          status: newStatus,
-        }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setSelectedTicket(null);
-        fetchStats(false);
-      } else {
-        alert(json.error || "Gagal memperbarui tiket");
-      }
-    } catch (err: any) {
-      alert(err?.message || "Terjadi kesalahan");
-    } finally {
-      setIsUpdatingTicket(false);
-    }
-  };
-
   const copyToClipboard = (text: string, id: string) => {
     if (navigator?.clipboard) {
       navigator.clipboard.writeText(text);
@@ -192,9 +160,6 @@ export default function DashboardOverviewPage() {
     totalBalance: 0,
     totalWithdrawn: 0,
     totalEarned: 0,
-    totalTickets: 0,
-    activeTickets: 0,
-    resolvedTickets: 0,
     pendingWithdrawals: 0,
     pendingWithdrawalsAmount: 0,
     totalTransactionsCount: 0,
@@ -227,35 +192,18 @@ export default function DashboardOverviewPage() {
         </div>
       )}
 
-      {/* 4 Compact Metric KPI Cards (Static / Non-clickable) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Card 1: Total Pengguna */}
-        <div className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left">
+      {/* 3 Metric KPI Cards (Order matches the tabs below) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Card 1: Saldo Beredar (Mutasi Transaksi) */}
+        <div
+          onClick={() => {
+            setActiveTab("transactions");
+            scrollToTabs();
+          }}
+          className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left cursor-pointer hover:border-emerald-500/40 hover:bg-zinc-900 transition-all group"
+        >
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider">Pengguna</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
-              <Users className="w-3.5 h-3.5" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              {isLoading ? (
-                <div className="w-16 h-7 bg-zinc-800 animate-pulse rounded" />
-              ) : (
-                stats.totalUsers.toLocaleString("id-ID")
-              )}
-            </div>
-            <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
-              <span>{stats.totalAdmins} Admin • {stats.totalMembers} Member</span>
-              <span className="text-zinc-500 text-[10px]">Lihat ↓</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Saldo Beredar */}
-        <div className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider">Saldo Beredar</span>
+            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-emerald-400 transition-colors">Saldo Beredar</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
               <Wallet className="w-3.5 h-3.5" />
             </div>
@@ -270,15 +218,21 @@ export default function DashboardOverviewPage() {
             </div>
             <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
               <span>Ditarik: Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</span>
-              <span className="text-zinc-500 text-[10px]">Mutasi ↓</span>
+              <span className="text-zinc-500 group-hover:text-emerald-400 transition-colors text-[10px]">Mutasi ↓</span>
             </div>
           </div>
         </div>
 
-        {/* Card 3: Penarikan Pending */}
-        <div className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left">
+        {/* Card 2: Withdraw */}
+        <div
+          onClick={() => {
+            setActiveTab("withdrawals");
+            scrollToTabs();
+          }}
+          className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left cursor-pointer hover:border-amber-500/40 hover:bg-zinc-900 transition-all group"
+        >
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider">Antrian WD</span>
+            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-amber-400 transition-colors">Withdraw</span>
             <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
               <ArrowLeftRight className="w-3.5 h-3.5" />
             </div>
@@ -302,35 +256,36 @@ export default function DashboardOverviewPage() {
             </div>
             <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
               <span>Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}</span>
-              <span className="text-zinc-500 text-[10px]">Proses ↓</span>
+              <span className="text-zinc-500 group-hover:text-amber-400 transition-colors text-[10px]">Proses ↓</span>
             </div>
           </div>
         </div>
 
-        {/* Card 4: Tiket CS */}
-        <div className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left">
+        {/* Card 3: Total Pengguna */}
+        <div
+          onClick={() => {
+            setActiveTab("users");
+            scrollToTabs();
+          }}
+          className="p-3.5 rounded-xl border bg-zinc-900/80 border-zinc-800 shadow-sm text-left cursor-pointer hover:border-blue-500/40 hover:bg-zinc-900 transition-all group"
+        >
           <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-[11px] font-medium uppercase tracking-wider">Tiket CS</span>
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
-              <MessageSquareText className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-medium uppercase tracking-wider group-hover:text-blue-400 transition-colors">Pengguna</span>
+            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+              <Users className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="mt-2">
-            <div className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-1.5">
+            <div className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               {isLoading ? (
-                <div className="w-12 h-7 bg-zinc-800 animate-pulse rounded" />
+                <div className="w-16 h-7 bg-zinc-800 animate-pulse rounded" />
               ) : (
-                <>
-                  <span>{stats.activeTickets}</span>
-                  <span className="text-[10px] font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.2 rounded">
-                    Aktif
-                  </span>
-                </>
+                stats.totalUsers.toLocaleString("id-ID")
               )}
             </div>
             <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
-              <span>{stats.resolvedTickets} Selesai • Total {stats.totalTickets}</span>
-              <span className="text-zinc-500 text-[10px]">Buka ↓</span>
+              <span>{stats.totalAdmins} Admin • {stats.totalMembers} Member</span>
+              <span className="text-zinc-500 group-hover:text-blue-400 transition-colors text-[10px]">Lihat ↓</span>
             </div>
           </div>
         </div>
@@ -342,24 +297,7 @@ export default function DashboardOverviewPage() {
           {/* Tab Header */}
           <div className="flex items-center justify-between border-b border-zinc-800 px-3 pt-2 pb-0 bg-zinc-950/40 overflow-x-auto">
             <div className="flex items-center gap-1">
-              {/* Tab 1: Tiket */}
-              <button
-                type="button"
-                onClick={() => setActiveTab("tickets")}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-colors cursor-pointer ${
-                  activeTab === "tickets"
-                    ? "border-emerald-500 text-emerald-400 bg-zinc-900/60"
-                    : "border-transparent text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <MessageSquareText className="w-3.5 h-3.5" />
-                <span>Tiket Masuk</span>
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300">
-                  {stats.totalTickets}
-                </span>
-              </button>
-
-              {/* Tab 2: Mutasi Transaksi */}
+              {/* Tab 1: Mutasi Transaksi */}
               <button
                 type="button"
                 onClick={() => setActiveTab("transactions")}
@@ -376,7 +314,7 @@ export default function DashboardOverviewPage() {
                 </span>
               </button>
 
-              {/* Tab 3: Antrian WD */}
+              {/* Tab 2: Withdraw */}
               <button
                 type="button"
                 onClick={() => setActiveTab("withdrawals")}
@@ -387,7 +325,7 @@ export default function DashboardOverviewPage() {
                 }`}
               >
                 <Wallet className="w-3.5 h-3.5" />
-                <span>Antrian WD</span>
+                <span>Withdraw</span>
                 {stats.pendingWithdrawals > 0 ? (
                   <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">
                     {stats.pendingWithdrawals}
@@ -399,7 +337,7 @@ export default function DashboardOverviewPage() {
                 )}
               </button>
 
-              {/* Tab 4: Pengguna */}
+              {/* Tab 3: Daftar Pengguna */}
               <button
                 type="button"
                 onClick={() => setActiveTab("users")}
@@ -420,68 +358,7 @@ export default function DashboardOverviewPage() {
 
           {/* Tab Body */}
           <div className="p-3">
-            {/* 1. Tab Tiket Masuk */}
-            {activeTab === "tickets" && (
-              isLoading ? (
-                <div className="space-y-2 py-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-12 bg-zinc-800/40 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : !data?.recentTickets || data.recentTickets.length === 0 ? (
-                <div className="py-10 text-center text-zinc-500 text-xs">
-                  Belum ada tiket bantuan yang tercatat di Supabase.
-                </div>
-              ) : (
-                <div className="divide-y divide-zinc-800/70">
-                  {data.recentTickets.map((t: any) => (
-                    <div
-                      key={t.id}
-                      className="py-2.5 flex items-center justify-between gap-3 hover:bg-zinc-800/30 px-2 rounded-lg transition-colors"
-                    >
-                      <div className="min-w-0 space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-zinc-200">
-                            {t.ticket_code}
-                          </span>
-                          <StatusBadge status={t.status} />
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-                            {t.category}
-                          </span>
-                        </div>
-                        <p className="text-xs font-medium text-zinc-300 truncate max-w-md">
-                          {t.subject}
-                        </p>
-                        <p className="text-[10px] text-zinc-500">
-                          {t.userName} ({t.userEmail}) •{" "}
-                          {new Date(t.created_at).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          setSelectedTicket(t);
-                          setTicketStatusUpdate(t.status);
-                        }}
-                        className="shrink-0 text-xs font-medium h-7 px-2.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/20 transition-all flex items-center gap-1"
-                      >
-                        <span>Kelola</span>
-                        <ChevronRight className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
-
-            {/* 2. Tab Mutasi Transaksi */}
+            {/* 1. Tab Mutasi Transaksi */}
             {activeTab === "transactions" && (
               isLoading ? (
                 <div className="space-y-2 py-2">
@@ -539,7 +416,7 @@ export default function DashboardOverviewPage() {
               )
             )}
 
-            {/* 3. Tab Antrian Penarikan (WD) */}
+            {/* 2. Tab Withdraw */}
             {activeTab === "withdrawals" && (
               !data?.pendingWithdrawalsList || data.pendingWithdrawalsList.length === 0 ? (
                 <div className="py-12 text-center space-y-2">
@@ -548,7 +425,7 @@ export default function DashboardOverviewPage() {
                   </div>
                   <p className="text-xs text-zinc-300 font-semibold">Semua Penarikan Telah Diproses</p>
                   <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
-                    Saat ini tidak ada antrian penarikan saldo pengguna yang pending.
+                    Saat ini tidak ada penarikan saldo pengguna yang pending.
                   </p>
                 </div>
               ) : (
@@ -716,69 +593,7 @@ export default function DashboardOverviewPage() {
         </form>
       </Modal>
 
-      {/* Quick Ticket Detail Modal */}
-      {selectedTicket && (
-        <Modal
-          isOpen={!!selectedTicket}
-          onClose={() => setSelectedTicket(null)}
-          title={`Detail Tiket: ${selectedTicket.ticket_code}`}
-          subtitle={`Kategori: ${selectedTicket.category} • Dibuat oleh ${selectedTicket.userName}`}
-          footer={
-            <>
-              <Button
-                variant="ghost"
-                onClick={() => setSelectedTicket(null)}
-                disabled={isUpdatingTicket}
-              >
-                Tutup
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => handleUpdateTicketStatus(ticketStatusUpdate)}
-                isLoading={isUpdatingTicket}
-              >
-                Simpan Perubahan
-              </Button>
-            </>
-          }
-        >
-          <div className="space-y-4 text-xs">
-            <div className="p-3 bg-zinc-950/70 border border-zinc-800 rounded-xl space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Pengirim:</span>
-                <span className="font-semibold text-zinc-200">
-                  {selectedTicket.userName} ({selectedTicket.userEmail})
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Waktu:</span>
-                <span className="text-zinc-300">
-                  {new Date(selectedTicket.created_at).toLocaleString("id-ID")}
-                </span>
-              </div>
-            </div>
 
-            <div>
-              <p className="text-zinc-400 font-medium mb-1">Subjek / Masalah:</p>
-              <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-200 leading-relaxed">
-                {selectedTicket.subject}
-              </div>
-            </div>
-
-            <Select
-              label="Perbarui Status Tiket"
-              value={ticketStatusUpdate}
-              onChange={(e) => setTicketStatusUpdate(e.target.value)}
-              options={[
-                { label: "Baru / Belum Ditangani", value: "baru" },
-                { label: "Sedang Diproses", value: "proses" },
-                { label: "Selesai (Resolved)", value: "selesai" },
-                { label: "Ditolak / Ditutup", value: "ditolak" },
-              ]}
-            />
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }

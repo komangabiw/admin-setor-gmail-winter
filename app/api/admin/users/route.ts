@@ -154,7 +154,15 @@ export async function GET(req: NextRequest) {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
 
-    return NextResponse.json({ success: true, users });
+    const total = users.length;
+    const limitParam = searchParams.get("limit") || "50";
+    let paginatedUsers = users;
+    if (limitParam !== "all") {
+      const limitNum = parseInt(limitParam, 10) || 50;
+      paginatedUsers = users.slice(0, limitNum);
+    }
+
+    return NextResponse.json({ success: true, users: paginatedUsers, total });
   } catch (err: any) {
     console.error("Users GET API error:", err);
     return NextResponse.json(

@@ -42,6 +42,8 @@ export function UsersTab({
   onUserUpdated?: () => void;
 }) {
   const [users, setUsers] = useState<any[]>([]);
+  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const [limit, setLimit] = useState<"50" | "100" | "all">("50");
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -59,6 +61,7 @@ export function UsersTab({
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
+      params.set("limit", limit);
 
       const res = await fetch(`/api/admin/users?${params.toString()}`);
       const json = await res.json();
@@ -70,6 +73,7 @@ export function UsersTab({
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
         setUsers(sorted);
+        setTotalUsers(typeof json.total === "number" ? json.total : sorted.length);
       }
     } catch (err) {
       console.error("Gagal memuat pengguna:", err);
@@ -83,7 +87,7 @@ export function UsersTab({
       fetchUsers();
     }, 300);
     return () => clearTimeout(timeout);
-  }, [search]);
+  }, [search, limit]);
 
   // Open Edit Saldo
   const handleOpenEditSaldo = (u: any) => {
@@ -226,10 +230,40 @@ export function UsersTab({
           />
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* Limit selector: 50, 100, all */}
+          <div className="flex items-center gap-1 bg-zinc-950/80 border border-zinc-800 rounded-lg p-1 text-xs">
+            <span className="text-[11px] text-zinc-400 px-1 font-medium">Tampilkan:</span>
+            {(["50", "100", "all"] as const).map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setLimit(opt)}
+                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
+                  limit === opt
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                }`}
+              >
+                {opt === "all" ? "Semua" : opt}
+              </button>
+            ))}
+          </div>
+
           <span className="text-[11px] text-zinc-400">
-            Total: <b className="text-white font-mono">{users.length}</b> pengguna
+            {limit !== "all" && totalUsers > users.length ? (
+              <>
+                <b className="text-white font-mono">{users.length}</b> dari{" "}
+                <b className="text-white font-mono">{totalUsers}</b>
+              </>
+            ) : (
+              <>
+                Total: <b className="text-white font-mono">{totalUsers || users.length}</b>
+              </>
+            )}{" "}
+            pengguna
           </span>
+
           <Button
             variant="secondary"
             size="sm"
@@ -460,6 +494,35 @@ export function UsersTab({
             </tbody>
           </table>
         </div>
+
+        {limit !== "all" && totalUsers > users.length && (
+          <div className="p-3 bg-zinc-950/90 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-400">
+            <div>
+              Menampilkan <b className="text-zinc-200">{users.length}</b> dari{" "}
+              <b className="text-zinc-200">{totalUsers}</b> pengguna (dibatasi agar web ringan)
+            </div>
+            <div className="flex items-center gap-2">
+              {limit === "50" && totalUsers > 50 && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setLimit("100")}
+                  className="h-7 px-2.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700"
+                >
+                  Tampilkan 100
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setLimit("all")}
+                className="h-7 px-2.5 text-xs bg-emerald-500/10 hover:bg-emerald-600 hover:text-white text-emerald-400 border-emerald-500/20"
+              >
+                Tampilkan Semua ({totalUsers})
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit Saldo Modal */}
