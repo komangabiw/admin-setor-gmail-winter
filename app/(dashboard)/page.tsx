@@ -216,9 +216,8 @@ export default function DashboardOverviewPage() {
                 `Rp ${stats.totalBalance.toLocaleString("id-ID")}`
               )}
             </div>
-            <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
+            <div className="mt-1.5 text-[11px] text-zinc-400">
               <span>Ditarik: Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</span>
-              <span className="text-zinc-500 group-hover:text-emerald-400 transition-colors text-[10px]">Mutasi ↓</span>
             </div>
           </div>
         </div>
@@ -244,19 +243,16 @@ export default function DashboardOverviewPage() {
               ) : (
                 <>
                   <span>{stats.pendingWithdrawals}</span>
-                  {stats.pendingWithdrawals > 0 ? (
+                  {stats.pendingWithdrawals > 0 && (
                     <span className="text-[10px] font-bold px-1.5 py-0.2 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
                       Pending
                     </span>
-                  ) : (
-                    <span className="text-[10px] text-zinc-500 font-normal">Kosong</span>
                   )}
                 </>
               )}
             </div>
-            <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
+            <div className="mt-1.5 text-[11px] text-zinc-400">
               <span>Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}</span>
-              <span className="text-zinc-500 group-hover:text-amber-400 transition-colors text-[10px]">Proses ↓</span>
             </div>
           </div>
         </div>
@@ -283,9 +279,8 @@ export default function DashboardOverviewPage() {
                 stats.totalUsers.toLocaleString("id-ID")
               )}
             </div>
-            <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-400">
+            <div className="mt-1.5 text-[11px] text-zinc-400">
               <span>{stats.totalAdmins} Admin • {stats.totalMembers} Member</span>
-              <span className="text-zinc-500 group-hover:text-blue-400 transition-colors text-[10px]">Lihat ↓</span>
             </div>
           </div>
         </div>

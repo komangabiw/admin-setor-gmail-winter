@@ -164,6 +164,10 @@ export default function UserManagementPage() {
 
   // Toggle Role (Admin / User)
   const handleToggleRole = async (u: any) => {
+    if (u.role === "Admin") {
+      alert("Tidak dapat mengubah role sesama Admin");
+      return;
+    }
     const targetRole = u.role === "Admin" ? "User" : "Admin";
     const confirm = window.confirm(
       `Apakah Anda yakin ingin mengubah role ${u.name || u.email} menjadi ${targetRole}?`
@@ -193,6 +197,10 @@ export default function UserManagementPage() {
 
   // Toggle Block User
   const handleToggleBlock = async (u: any) => {
+    if (u.role === "Admin") {
+      alert("Tidak dapat memblokir akun sesama Admin");
+      return;
+    }
     const willBlock = !u.is_blocked;
     const confirm = window.confirm(
       `Apakah Anda yakin ingin ${willBlock ? "MEMBLOKIR" : "MEMBUKA BLOKIR"} akun ${
@@ -498,37 +506,37 @@ export default function UserManagementPage() {
                           <span>Saldo</span>
                         </Button>
 
-                        {/* Toggle Role */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleRole(u)}
-                          title={u.role === "Admin" ? "Turunkan ke Pengguna Biasa" : "Jadikan Admin"}
-                          className="px-2 py-1 text-zinc-400 hover:text-blue-400"
-                        >
-                          {u.role === "Admin" ? (
-                            <UserCheck className="w-3.5 h-3.5 text-blue-400" />
-                          ) : (
+                        {/* Toggle Role (Hanya untuk non-admin) */}
+                        {u.role !== "Admin" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleRole(u)}
+                            title="Jadikan Admin"
+                            className="px-2 py-1 text-zinc-400 hover:text-blue-400"
+                          >
                             <Shield className="w-3.5 h-3.5" />
-                          )}
-                        </Button>
+                          </Button>
+                        )}
 
-                        {/* Toggle Block */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleBlock(u)}
-                          title={u.is_blocked ? "Buka Blokir" : "Blokir Akun"}
-                          className={`px-2 py-1 ${
-                            u.is_blocked ? "text-emerald-400 hover:text-emerald-300" : "text-zinc-400 hover:text-amber-400"
-                          }`}
-                        >
-                          {u.is_blocked ? (
-                            <CheckCircle className="w-3.5 h-3.5" />
-                          ) : (
-                            <Ban className="w-3.5 h-3.5" />
-                          )}
-                        </Button>
+                        {/* Toggle Block (Hanya untuk non-admin) */}
+                        {u.role !== "Admin" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleBlock(u)}
+                            title={u.is_blocked ? "Buka Blokir" : "Blokir Akun"}
+                            className={`px-2 py-1 ${
+                              u.is_blocked ? "text-emerald-400 hover:text-emerald-300" : "text-zinc-400 hover:text-amber-400"
+                            }`}
+                          >
+                            {u.is_blocked ? (
+                              <CheckCircle className="w-3.5 h-3.5" />
+                            ) : (
+                              <Ban className="w-3.5 h-3.5" />
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -539,31 +547,9 @@ export default function UserManagementPage() {
         </div>
 
         {limit !== "all" && totalUsers > users.length && (
-          <div className="p-3 bg-zinc-950/90 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-400">
-            <div>
-              Menampilkan <b className="text-zinc-200">{users.length}</b> dari{" "}
-              <b className="text-zinc-200">{totalUsers}</b> pengguna (dibatasi agar web ringan)
-            </div>
-            <div className="flex items-center gap-2">
-              {limit === "50" && totalUsers > 50 && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setLimit("100")}
-                  className="h-7 px-2.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700"
-                >
-                  Tampilkan 100
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setLimit("all")}
-                className="h-7 px-2.5 text-xs bg-emerald-500/10 hover:bg-emerald-600 hover:text-white text-emerald-400 border-emerald-500/20"
-              >
-                Tampilkan Semua ({totalUsers})
-              </Button>
-            </div>
+          <div className="p-3 bg-zinc-950/90 border-t border-zinc-800/80 text-xs text-zinc-400">
+            Menampilkan <b className="text-zinc-200">{users.length}</b> dari{" "}
+            <b className="text-zinc-200">{totalUsers}</b> pengguna
           </div>
         )}
       </div>

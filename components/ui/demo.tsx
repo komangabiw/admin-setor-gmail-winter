@@ -141,39 +141,11 @@ export function LineChart9({
     <Card className={`w-full bg-zinc-900/90 border border-zinc-800 shadow-sm ${className}`}>
       <CardContent className="flex flex-col items-stretch gap-5 p-5">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-2">
           <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-xs text-zinc-400 font-medium uppercase tracking-wider">
-                Jumlah Setor Gmail
-              </h2>
-
-              {/* Selector: Jumlah Setor & Jumlah Pengeluaran */}
-              <div className="flex items-center p-0.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setSelectedMetric('setor')}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                    isSetor
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-xs'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  Jumlah Setor
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedMetric('pengeluaran')}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                    !isSetor
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-xs'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  Jumlah Pengeluaran
-                </button>
-              </div>
-            </div>
+            <h2 className="text-xs text-zinc-400 font-medium uppercase tracking-wider">
+              Setor Gmail by Winter
+            </h2>
 
             <div className="flex flex-wrap items-baseline gap-2 sm:gap-3.5">
               <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
@@ -195,18 +167,46 @@ export function LineChart9({
             </div>
           </div>
 
-          {onRefresh && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onRefresh}
-              isLoading={isRefreshing}
-              className="h-8 px-2.5 text-xs flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-zinc-200 shrink-0 self-start sm:self-auto"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-              <span>Refresh</span>
-            </Button>
-          )}
+          {/* Right side: Refresh Button & Selector underneath */}
+          <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="h-7 px-3 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-200 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} />
+                <span>Refresh</span>
+              </button>
+            )}
+
+            {/* Selector: Jumlah Setor & Jumlah Pengeluaran di bawah tombol refresh */}
+            <div className="flex items-center p-0.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs">
+              <button
+                type="button"
+                onClick={() => setSelectedMetric('setor')}
+                className={`h-6 px-2.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center ${
+                  isSetor
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-xs'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Jumlah Setor
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedMetric('pengeluaran')}
+                className={`h-6 px-2.5 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center ${
+                  !isSetor
+                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-xs'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Jumlah Pengeluaran
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="grow">

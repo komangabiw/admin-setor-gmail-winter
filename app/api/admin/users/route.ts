@@ -245,6 +245,22 @@ export async function PATCH(req: NextRequest) {
       });
     }
 
+    // Aksi 2 & 3: Proteksi agar tidak bisa memblokir atau mengubah role sesama admin
+    if (action === "toggle_role" || action === "toggle_block") {
+      const { data: targetProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (targetProfile?.role === "Admin") {
+        return NextResponse.json(
+          { success: false, error: "Tidak dapat mengubah role atau memblokir sesama Admin" },
+          { status: 403 }
+        );
+      }
+    }
+
     // Aksi 2: Ubah Role (Admin / User)
     if (action === "toggle_role") {
       const { role } = body;
