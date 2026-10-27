@@ -289,7 +289,9 @@ export default function DashboardOverviewPage() {
                   User Punya Saldo:
                 </span>
                 <b className="text-white font-mono">
-                  {stats.usersWithBalance.toLocaleString("id-ID")} User
+                  {isBalanceHidden
+                    ? "*** User"
+                    : `${stats.usersWithBalance.toLocaleString("id-ID")} User`}
                 </b>
               </div>
               <div className="flex items-center justify-between">
@@ -299,11 +301,13 @@ export default function DashboardOverviewPage() {
                 </span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-purple-400 font-mono font-semibold bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 text-[10px]">
-                    {stats.totalWithdrawalTransactions}x Tarik
+                    {isBalanceHidden ? "*** Tarik" : `${stats.totalWithdrawalTransactions}x Tarik`}
                   </span>
                   <span className="text-zinc-600">•</span>
                   <b className="text-white font-mono">
-                    {stats.usersWithdrawnCount.toLocaleString("id-ID")} User
+                    {isBalanceHidden
+                      ? "*** User"
+                      : `${stats.usersWithdrawnCount.toLocaleString("id-ID")} User`}
                   </b>
                 </div>
               </div>
@@ -357,6 +361,8 @@ export default function DashboardOverviewPage() {
               <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
                 {isLoading ? (
                   <div className="w-20 h-6 bg-zinc-800 animate-pulse rounded" />
+                ) : isBalanceHidden ? (
+                  "*** Akun Gmail"
                 ) : (
                   `${stats.totalGmailCreated.toLocaleString("id-ID")} Akun Gmail`
                 )}
@@ -368,21 +374,21 @@ export default function DashboardOverviewPage() {
               <div className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 py-2 rounded-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 <span className="text-zinc-400">Diterima:</span>
-                <b className="text-emerald-400 font-mono">{stats.gmailDiterima || 0}</b>
+                <b className="text-emerald-400 font-mono">{isBalanceHidden ? "***" : (stats.gmailDiterima || 0)}</b>
               </div>
 
               {/* Dicek (Tengah) */}
               <div className="flex-1 flex items-center justify-center gap-1.5 bg-amber-500/10 border border-amber-500/20 py-2 rounded-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 <span className="text-zinc-400">Dicek:</span>
-                <b className="text-amber-400 font-mono">{stats.gmailDicek || 0}</b>
+                <b className="text-amber-400 font-mono">{isBalanceHidden ? "***" : (stats.gmailDicek || 0)}</b>
               </div>
 
               {/* Ditolak (Kanan) */}
               <div className="flex-1 flex items-center justify-center gap-1.5 bg-rose-500/10 border border-rose-500/20 py-2 rounded-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
                 <span className="text-zinc-400">Ditolak:</span>
-                <b className="text-rose-400 font-mono">{stats.gmailDitolak || 0}</b>
+                <b className="text-rose-400 font-mono">{isBalanceHidden ? "***" : (stats.gmailDitolak || 0)}</b>
               </div>
             </div>
           </div>

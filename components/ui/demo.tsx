@@ -7,75 +7,55 @@ import { TrendingUp, TrendingDown, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, XAxis, YAxis } from 'recharts';
 
-// Data setoran
-const setorData = [
-  { date: 'Jan 1', value: 850, time: '20:00' },
-  { date: 'Jan 2', value: 1100, time: '00:00' },
-  { date: 'Jan 3', value: 1680, time: '04:00' },
-  { date: 'Jan 4', value: 1490, time: '08:00' },
-  { date: 'Jan 5', value: 2020, time: '12:00' },
-  { date: 'Jan 6', value: 2080, time: '16:00' },
-  { date: 'Jan 7', value: 2180, time: '20:00' },
-  { date: 'Jan 8', value: 2250, time: '00:00' },
-  { date: 'Jan 9', value: 2480, time: '04:00' },
-  { date: 'Jan 10', value: 2290, time: '08:00' },
-  { date: 'Jan 11', value: 2450, time: '12:00' },
-  { date: 'Jan 12', value: 2380, time: '16:00' },
-  { date: 'Jan 13', value: 2220, time: '20:00' },
-  { date: 'Jan 14', value: 1980, time: '00:00' },
-  { date: 'Jan 15', value: 1750, time: '04:00' },
-  { date: 'Jan 16', value: 1620, time: '08:00' },
-  { date: 'Jan 17', value: 1480, time: '12:00' },
-  { date: 'Jan 18', value: 1580, time: '16:00' },
-  { date: 'Jan 19', value: 1820, time: '20:00' },
-  { date: 'Jan 20', value: 1950, time: '00:00' },
-  { date: 'Jan 21', value: 2080, time: '04:00' },
-  { date: 'Jan 22', value: 2220, time: '08:00' },
-  { date: 'Jan 23', value: 2380, time: '12:00' },
-  { date: 'Jan 24', value: 2550, time: '16:00' },
-  { date: 'Jan 25', value: 2480, time: '20:00' },
-  { date: 'Jan 26', value: 2720, time: '00:00' },
-  { date: 'Jan 27', value: 2900, time: '04:00' },
-  { date: 'Jan 28', value: 2550, time: '08:00' },
-  { date: 'Jan 29', value: 2320, time: '12:00' },
-  { date: 'Feb 15', value: 2250, time: '14:00' },
-  { date: 'Mar 24', value: 1900, time: '16:00' },
-];
+const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
-// Data pengeluaran (withdrawals / payout)
-const pengeluaranData = [
-  { date: 'Jan 1', value: 350, time: '20:00' },
-  { date: 'Jan 2', value: 420, time: '00:00' },
-  { date: 'Jan 3', value: 580, time: '04:00' },
-  { date: 'Jan 4', value: 490, time: '08:00' },
-  { date: 'Jan 5', value: 650, time: '12:00' },
-  { date: 'Jan 6', value: 720, time: '16:00' },
-  { date: 'Jan 7', value: 680, time: '20:00' },
-  { date: 'Jan 8', value: 790, time: '00:00' },
-  { date: 'Jan 9', value: 850, time: '04:00' },
-  { date: 'Jan 10', value: 760, time: '08:00' },
-  { date: 'Jan 11', value: 820, time: '12:00' },
-  { date: 'Jan 12', value: 790, time: '16:00' },
-  { date: 'Jan 13', value: 710, time: '20:00' },
-  { date: 'Jan 14', value: 640, time: '00:00' },
-  { date: 'Jan 15', value: 580, time: '04:00' },
-  { date: 'Jan 16', value: 520, time: '08:00' },
-  { date: 'Jan 17', value: 480, time: '12:00' },
-  { date: 'Jan 18', value: 530, time: '16:00' },
-  { date: 'Jan 19', value: 610, time: '20:00' },
-  { date: 'Jan 20', value: 680, time: '00:00' },
-  { date: 'Jan 21', value: 720, time: '04:00' },
-  { date: 'Jan 22', value: 780, time: '08:00' },
-  { date: 'Jan 23', value: 810, time: '12:00' },
-  { date: 'Jan 24', value: 850, time: '16:00' },
-  { date: 'Jan 25', value: 790, time: '20:00' },
-  { date: 'Jan 26', value: 830, time: '00:00' },
-  { date: 'Jan 27', value: 890, time: '04:00' },
-  { date: 'Jan 28', value: 780, time: '08:00' },
-  { date: 'Jan 29', value: 690, time: '12:00' },
-  { date: 'Feb 15', value: 640, time: '14:00' },
-  { date: 'Mar 24', value: 590, time: '16:00' },
-];
+// Generator data real-time dinamis sesuai kalender saat ini (new Date())
+function generateRealtimeChartData(timeframe: string, isSetor: boolean = true) {
+  const now = new Date();
+
+  if (timeframe === '1D') {
+    // Real time 24 jam hari ini dalam interval 4 jam
+    const hours = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:59'];
+    return hours.map((h, idx) => {
+      const base = isSetor ? 1700 : 550;
+      const wave = Math.sin((idx + 1) * 0.9) * (isSetor ? 450 : 180);
+      return {
+        date: h,
+        time: h,
+        value: Math.max(300, Math.round(base + wave)),
+      };
+    });
+  }
+
+  const numDays = timeframe === '3D' ? 3 : timeframe === '7D' ? 7 : timeframe === '14D' ? 14 : 30;
+  const result = [];
+
+  // Wave organik yang mulus untuk visualisasi grafik
+  const baseCurveSetor = [1580, 1850, 2150, 2480, 2900, 2550, 2100, 2300, 2600, 2750, 2850, 2600, 2400, 2250];
+  const baseCurveTarik = [530, 620, 750, 820, 890, 780, 680, 740, 810, 850, 880, 790, 710, 650];
+  const curve = isSetor ? baseCurveSetor : baseCurveTarik;
+
+  for (let i = numDays - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const day = d.getDate();
+    const month = MONTHS_ID[d.getMonth()];
+    const dateLabel = `${day} ${month}`; // e.g. "22 Okt" s/d "28 Okt"
+
+    const idx = (numDays - 1 - i) % curve.length;
+    const baseVal = curve[idx] || (isSetor ? 2300 : 700);
+    const variance = Math.round(Math.sin((numDays - i) * 1.1) * (isSetor ? 220 : 70));
+    const value = Math.max(isSetor ? 800 : 300, baseVal + variance);
+
+    result.push({
+      date: dateLabel,
+      time: '12:00',
+      value: value,
+    });
+  }
+
+  return result;
+}
 
 const chartConfig = {
   value: {
@@ -107,7 +87,7 @@ const CustomTooltip = ({ active, payload, isSetor, isBalanceHidden }: TooltipPro
             {isBalanceHidden ? 'Rp ***' : `Rp ${(data.value * 1000).toLocaleString('id-ID')}`}
           </div>
           <div className={`text-[11px] font-semibold ${isSetor ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {isSetor ? '+12.7%' : '-4.2%'}
+            {isBalanceHidden ? '***%' : (isSetor ? '+12.7%' : '-4.2%')}
           </div>
         </div>
       </div>
@@ -149,22 +129,17 @@ export function LineChart9({
   };
 
   const isSetor = selectedMetric === 'setor';
-  const baseData = isSetor ? setorData : pengeluaranData;
 
-  // Filter data based on active timeframe
+  // Dynamic real-time data calculated from current calendar date
   const activeData = React.useMemo(() => {
-    if (activeTimeframe === '1D') return baseData.slice(-4);
-    if (activeTimeframe === '3D') return baseData.slice(-7);
-    if (activeTimeframe === '7D') return baseData.slice(-14);
-    if (activeTimeframe === '14D') return baseData.slice(-21);
-    return baseData;
-  }, [baseData, activeTimeframe]);
+    return generateRealtimeChartData(activeTimeframe, isSetor);
+  }, [activeTimeframe, isSetor]);
 
   const currentTotal = isSetor ? 24847830 : 6420000;
   const highVal = Math.max(...activeData.map((d) => d.value));
   const lowVal = Math.min(...activeData.map((d) => d.value));
 
-  const refItem = activeData.find((d) => d.date === 'Jan 17') || activeData[Math.floor(activeData.length / 2)];
+  const refItem = activeData[Math.floor(activeData.length / 2)];
   const refDate = refItem?.date;
 
   const lineColor = isSetor ? '#c084fc' : '#fb7185';
@@ -237,7 +212,9 @@ export function LineChart9({
               <div className="flex items-center gap-1.5">
                 <span className="text-zinc-400">Gmail Disetor :</span>
                 <span className="font-semibold text-white font-mono">
-                  {gmailDisetor !== undefined
+                  {isBalanceHidden
+                    ? '*** Akun'
+                    : gmailDisetor !== undefined
                     ? typeof gmailDisetor === 'number'
                       ? `${gmailDisetor.toLocaleString('id-ID')} Akun`
                       : gmailDisetor
@@ -319,7 +296,7 @@ export function LineChart9({
                 tickLine={false}
                 width={48}
                 tick={{ fontSize: 11, fill: '#a1a1aa' }}
-                tickFormatter={(value) => `${(value / 1000).toFixed(1)}k`}
+                tickFormatter={(value) => (isBalanceHidden ? '***' : `${(value / 1000).toFixed(1)}k`)}
                 tickMargin={8}
               />
 
