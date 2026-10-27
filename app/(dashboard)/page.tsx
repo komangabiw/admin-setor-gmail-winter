@@ -200,17 +200,34 @@ export default function DashboardOverviewPage() {
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 shadow-sm space-y-4">
         {/* Header Insight */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+          <div className="flex items-start gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
               <TrendingUp className="w-4 h-4" />
             </div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-white tracking-tight">
-                Ekosistem & Likuiditas User
-              </h3>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                Live Insight
-              </span>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white tracking-tight">
+                  Ekosistem & Likuiditas User
+                </h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  Live Insight
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+                <span className="flex h-1.5 w-1.5 relative shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                <span>
+                  <b className="text-zinc-200">Kesehatan Likuiditas Kas:</b> Total perputaran dana pengguna mencapai{" "}
+                  <b className="text-emerald-400 font-mono">
+                    Rp {totalFlow.toLocaleString("id-ID")}
+                  </b>{" "}
+                  {stats.pendingWithdrawals > 0
+                    ? `— Perlu memproses ${stats.pendingWithdrawals} penarikan saldo (Rp ${stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}) segera.`
+                    : "— Semua penarikan tuntas dan saldo dompet beroperasi normal."}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -273,13 +290,13 @@ export default function DashboardOverviewPage() {
                   User Tarik Saldo:
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <b className="text-zinc-200 font-mono">
-                    {stats.usersWithdrawnCount.toLocaleString("id-ID")} User
-                  </b>
-                  <span className="text-zinc-600">•</span>
                   <span className="text-purple-400 font-mono font-semibold bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 text-[10px]">
                     {stats.totalWithdrawalTransactions}x Tarik
                   </span>
+                  <span className="text-zinc-600">•</span>
+                  <b className="text-zinc-200 font-mono">
+                    {stats.usersWithdrawnCount.toLocaleString("id-ID")} User
+                  </b>
                 </div>
               </div>
             </div>
@@ -311,14 +328,10 @@ export default function DashboardOverviewPage() {
                   Rp {stats.totalWithdrawn.toLocaleString("id-ID")}
                 </b>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                <span>Perputaran Dana:</span>
-                <span className="font-mono text-zinc-300 font-medium">Rp {totalFlow.toLocaleString("id-ID")}</span>
-              </div>
             </div>
           </div>
 
-          {/* Section 3: Gmail Digenerate & Status (Dicek/Ditolak/Diterima) */}
+          {/* Section 3: Gmail Digenerate & Status (Ditolak / Dicek / Diterima) */}
           <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col justify-between space-y-3.5 hover:border-zinc-700/80 transition-colors">
             <div>
               <div className="flex items-center justify-between text-zinc-400 mb-1.5">
@@ -338,18 +351,21 @@ export default function DashboardOverviewPage() {
             </div>
 
             <div className="border-t border-zinc-800/80 pt-3 flex items-center justify-between gap-1.5 text-[11px]">
-              <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-zinc-400">Dicek:</span>
-                <b className="text-amber-400 font-mono">{stats.gmailDicek || 0}</b>
-              </div>
-
+              {/* Ditolak (Kiri) */}
               <div className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 px-2 py-1 rounded-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
                 <span className="text-zinc-400">Ditolak:</span>
                 <b className="text-rose-400 font-mono">{stats.gmailDitolak || 0}</b>
               </div>
 
+              {/* Dicek (Tengah) */}
+              <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-zinc-400">Dicek:</span>
+                <b className="text-amber-400 font-mono">{stats.gmailDicek || 0}</b>
+              </div>
+
+              {/* Diterima (Kanan) */}
               <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 <span className="text-zinc-400">Diterima:</span>
@@ -357,23 +373,6 @@ export default function DashboardOverviewPage() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Insight Likuiditas Kas */}
-        <div className="pt-3 border-t border-zinc-800 flex items-center gap-2 text-xs">
-          <span className="flex h-2 w-2 relative shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span className="text-zinc-400 text-[11px]">
-            <b className="text-zinc-200">Kesehatan Likuiditas Kas:</b> Total perputaran dana pengguna mencapai{" "}
-            <b className="text-emerald-400 font-mono">
-              Rp {totalFlow.toLocaleString("id-ID")}
-            </b>{" "}
-            {stats.pendingWithdrawals > 0
-              ? `— Perlu memproses ${stats.pendingWithdrawals} penarikan saldo (Rp ${stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}) segera.`
-              : "— Semua penarikan tuntas dan saldo dompet beroperasi normal."}
-          </span>
         </div>
       </div>
 
