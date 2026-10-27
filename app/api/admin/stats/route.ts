@@ -79,6 +79,16 @@ export async function GET(req: NextRequest) {
     // Deposits (Gmail dibuat) metrics
     const allDeposits = deposits || [];
     const totalGmailCreated = allDeposits.length;
+    const gmailDiterima = allDeposits.filter((d) =>
+      ["diterima", "accepted", "sukses", "approved"].includes((d.status || "").toLowerCase())
+    ).length;
+    const gmailDicek = allDeposits.filter((d) =>
+      ["pending", "dicek", "proses", "menunggu"].includes((d.status || "").toLowerCase())
+    ).length;
+    const gmailDitolak = allDeposits.filter((d) =>
+      ["ditolak", "rejected", "batal"].includes((d.status || "").toLowerCase())
+    ).length;
+
     const acceptedDeposits = allDeposits.filter((d) =>
       ["diterima", "accepted", "sukses", "approved"].includes((d.status || "").toLowerCase())
     );
@@ -168,6 +178,9 @@ export async function GET(req: NextRequest) {
         usersWithdrawnCount,
         totalWithdrawalTransactions,
         totalGmailCreated,
+        gmailDiterima,
+        gmailDicek,
+        gmailDitolak,
         usersWithGmailSuccess,
         totalEarned,
         totalTickets,
