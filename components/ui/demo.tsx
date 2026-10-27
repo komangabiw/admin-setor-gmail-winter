@@ -120,15 +120,38 @@ export function LineChart9({
   className = '',
   onRefresh,
   isRefreshing,
+  timeframe = '30D',
+  onTimeframeChange,
 }: {
   className?: string;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  timeframe?: string;
+  onTimeframeChange?: (period: string) => void;
 }) {
   const [selectedMetric, setSelectedMetric] = useState<'setor' | 'pengeluaran'>('setor');
+  const [internalTimeframe, setInternalTimeframe] = useState<string>('30D');
+
+  const activeTimeframe = timeframe || internalTimeframe;
+  const handleTimeframeSelect = (period: string) => {
+    setInternalTimeframe(period);
+    if (onTimeframeChange) {
+      onTimeframeChange(period);
+    }
+  };
 
   const isSetor = selectedMetric === 'setor';
-  const activeData = isSetor ? setorData : pengeluaranData;
+  const baseData = isSetor ? setorData : pengeluaranData;
+
+  // Filter data based on active timeframe
+  const activeData = React.useMemo(() => {
+    if (activeTimeframe === '1D') return baseData.slice(-3);
+    if (activeTimeframe === '3D') return baseData.slice(-6);
+    if (activeTimeframe === '7D') return baseData.slice(-12);
+    if (activeTimeframe === '14D') return baseData.slice(-20);
+    return baseData;
+  }, [baseData, activeTimeframe]);
+
   const currentTotal = isSetor ? 24847830 : 6420000;
   const todayAmount = isSetor ? 1249000 : 350000;
   const highVal = Math.max(...activeData.map((d) => d.value));
@@ -163,8 +186,8 @@ export function LineChart9({
             </div>
           </div>
 
-          {/* Right side: Enlarged Refresh Button */}
-          <div className="flex items-center shrink-0">
+          {/* Right side: Enlarged Refresh Button with Day Selector underneath */}
+          <div className="flex flex-col sm:items-end gap-2 shrink-0">
             {onRefresh && (
               <button
                 type="button"
@@ -176,6 +199,24 @@ export function LineChart9({
                 <span>Refresh</span>
               </button>
             )}
+
+            {/* Timeframe Selector with 1D, 3D, 7D, 14D, 30D */}
+            <div className="flex items-center gap-1 bg-zinc-950/80 p-0.5 rounded-lg border border-zinc-800">
+              {['1D', '3D', '7D', '14D', '30D'].map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => handleTimeframeSelect(d)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                    activeTimeframe === d
+                      ? "bg-zinc-800 text-purple-400 font-semibold border border-zinc-700/80 shadow-xs"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
       { data: tickets, error: tErr },
       { data: transactions, count: txCount },
       { data: withdrawals, count: wdCount },
+      { data: deposits, error: depErr },
     ] = await Promise.all([
       supabaseAdmin
         .from("profiles")
@@ -31,9 +32,12 @@ export async function GET(req: NextRequest) {
         .limit(10),
       supabaseAdmin
         .from("withdrawals")
-        .select("id, user_id, amount, method, status, created_at, account_name, account_number", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .limit(10),
+        .select("id, user_id, amount, method, status, created_at, account_name, account_number")
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("deposits")
+        .select("id, user_id, status, amount, created_at")
+        .order("created_at", { ascending: false }),
     ]);
 
     if (pErr) throw pErr;
@@ -49,6 +53,8 @@ export async function GET(req: NextRequest) {
     let totalBalance = 0;
     let totalWithdrawn = 0;
     let totalEarned = 0;
+    let usersWithBalance = 0;
+    let usersWithdrawnFromWallets = 0;
 
     (wallets || []).forEach((w) => {
       const b = Number(w.balance) || 0;
@@ -58,7 +64,27 @@ export async function GET(req: NextRequest) {
       totalBalance += b;
       totalWithdrawn += tw;
       totalEarned += te;
+      if (b > 0) usersWithBalance++;
+      if (tw > 0) usersWithdrawnFromWallets++;
     });
+
+    // Withdrawal metrics
+    const successWithdrawals = (withdrawals || []).filter(
+      (w) => (w.status || "").toLowerCase() === "success"
+    );
+    const successWithdrawalUsers = new Set(successWithdrawals.map((w) => w.user_id));
+    const usersWithdrawnCount = Math.max(usersWithdrawnFromWallets, successWithdrawalUsers.size);
+    const totalWithdrawalTransactions = successWithdrawals.length;
+
+    // Deposits (Gmail dibuat) metrics
+    const allDeposits = deposits || [];
+    const totalGmailCreated = allDeposits.length;
+    const acceptedDeposits = allDeposits.filter((d) =>
+      ["diterima", "accepted", "sukses", "approved"].includes((d.status || "").toLowerCase())
+    );
+    const usersWithGmailSuccess = new Set(
+      (acceptedDeposits.length > 0 ? acceptedDeposits : allDeposits).map((d) => d.user_id)
+    ).size;
 
     const totalTickets = tickets?.length || 0;
     let activeTickets = 0;
@@ -137,7 +163,12 @@ export async function GET(req: NextRequest) {
         totalAdmins,
         totalMembers,
         totalBalance,
+        usersWithBalance,
         totalWithdrawn,
+        usersWithdrawnCount,
+        totalWithdrawalTransactions,
+        totalGmailCreated,
+        usersWithGmailSuccess,
         totalEarned,
         totalTickets,
         activeTickets,
@@ -145,7 +176,7 @@ export async function GET(req: NextRequest) {
         pendingWithdrawals,
         pendingWithdrawalsAmount,
         totalTransactionsCount: txCount || transactions?.length || 0,
-        totalWithdrawalsCount: wdCount || withdrawals?.length || 0,
+        totalWithdrawalsCount: (withdrawals || []).length,
       },
       systemHealth: {
         supabaseConnected: true,

@@ -19,6 +19,8 @@ import {
   ChevronRight,
   UserCheck,
   Search,
+  Mail,
+  ArrowDownToLine,
 } from "lucide-react";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,7 +34,7 @@ export default function DashboardOverviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"transactions" | "users">("transactions");
-  const [timeframe, setTimeframe] = useState<string>("30 hari");
+  const [timeframe, setTimeframe] = useState<string>("30D");
 
   // Quick Balance Modal
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
@@ -61,6 +63,13 @@ export default function DashboardOverviewPage() {
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleFullRefresh = async () => {
+    await fetchStats(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("admin_refresh_all"));
     }
   };
 
@@ -160,7 +169,12 @@ export default function DashboardOverviewPage() {
     totalAdmins: 0,
     totalMembers: 0,
     totalBalance: 0,
+    usersWithBalance: 0,
     totalWithdrawn: 0,
+    usersWithdrawnCount: 0,
+    totalWithdrawalTransactions: 0,
+    totalGmailCreated: 0,
+    usersWithGmailSuccess: 0,
     totalEarned: 0,
     pendingWithdrawals: 0,
     pendingWithdrawalsAmount: 0,
@@ -171,8 +185,13 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto pb-10">
-      {/* Revenue & Balance Flow Line Chart with Refresh Button */}
-      <LineChart9 onRefresh={() => fetchStats(false)} isRefreshing={isRefreshing} />
+      {/* Revenue & Balance Flow Line Chart with Refresh Button & Timeframe (1D, 3D, 7D, 14D, 30D) */}
+      <LineChart9
+        onRefresh={handleFullRefresh}
+        isRefreshing={isRefreshing}
+        timeframe={timeframe}
+        onTimeframeChange={(d) => setTimeframe(d)}
+      />
 
       {/* 1 Kolom Terpadu: Ekosistem & Likuiditas User */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 shadow-sm space-y-4">
@@ -192,7 +211,7 @@ export default function DashboardOverviewPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:items-end gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {stats.pendingWithdrawals > 0 ? (
               <button
                 type="button"
@@ -214,91 +233,137 @@ export default function DashboardOverviewPage() {
                 <span className="font-medium">Semua Penarikan Telah Diproses</span>
               </div>
             )}
-
-            {/* Filter Waktu: 1 hari, 3 hari, 7 hari, 14 hari, 30 hari */}
-            <div className="flex items-center gap-1 bg-zinc-950/80 p-0.5 rounded-lg border border-zinc-800/80">
-              {["1 hari", "3 hari", "7 hari", "14 hari", "30 hari"].map((period) => (
-                <button
-                  key={period}
-                  type="button"
-                  onClick={() => setTimeframe(period)}
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
-                    timeframe === period
-                      ? "bg-zinc-800 text-emerald-400 font-semibold shadow-xs border border-zinc-700/60"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
-                  }`}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
-        {/* Data Terpadu Satu Tampilan: Pengguna (Kiri) | Total Saldo User (Tengah) | Jumlah Penarikan Saldo User (Kanan) */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 py-2">
-          {/* 1. Pengguna (Paling Kiri, Tanpa Admin) */}
-          <div className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-blue-400" />
-              Pengguna
-            </span>
-            <div className="text-2xl font-bold text-white font-mono tracking-tight">
+        {/* 8 Metrik Terpadu: Ekosistem & Likuiditas User */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-1">
+          {/* 1. Jumlah User */}
+          <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3.5 space-y-1 hover:border-zinc-700/80 transition-colors">
+            <div className="flex items-center justify-between text-zinc-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider">Jumlah User</span>
+              <Users className="w-4 h-4 text-blue-400" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight">
               {isLoading ? (
-                <div className="w-20 h-7 bg-zinc-800 animate-pulse rounded" />
+                <div className="w-16 h-7 bg-zinc-800 animate-pulse rounded" />
               ) : (
                 `${stats.totalMembers.toLocaleString("id-ID")} User`
               )}
             </div>
+            <p className="text-[10px] text-zinc-500">Total member aktif</p>
           </div>
 
-          <div className="hidden md:block w-px h-12 bg-zinc-800" />
-
-          {/* 2. Total Saldo User */}
-          <div className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <Wallet className="w-3.5 h-3.5 text-emerald-400" />
-              Total Saldo User
-            </span>
-            <div className="text-2xl font-bold text-emerald-400 font-mono tracking-tight">
+          {/* 2. Total Saldo User yang Beredar */}
+          <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3.5 space-y-1 hover:border-zinc-700/80 transition-colors">
+            <div className="flex items-center justify-between text-zinc-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider">Saldo Beredar</span>
+              <Wallet className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-emerald-400 font-mono tracking-tight">
               {isLoading ? (
-                <div className="w-28 h-7 bg-zinc-800 animate-pulse rounded" />
+                <div className="w-24 h-7 bg-zinc-800 animate-pulse rounded" />
               ) : (
                 `Rp ${stats.totalBalance.toLocaleString("id-ID")}`
               )}
             </div>
-            <div className="text-[11px] text-zinc-400 flex items-center gap-2">
-              <span>Sudah Ditarik: <b className="text-zinc-200 font-mono">Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</b></span>
-            </div>
+            <p className="text-[10px] text-zinc-500">Total di dompet user</p>
           </div>
 
-          <div className="hidden md:block w-px h-12 bg-zinc-800" />
-
-          {/* 3. Jumlah Penarikan Saldo User */}
-          <div className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <ArrowLeftRight className="w-3.5 h-3.5 text-amber-400" />
-              Jumlah Penarikan Saldo User
-            </span>
-            <div className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+          {/* 3. Total User yang Memiliki Saldo */}
+          <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3.5 space-y-1 hover:border-zinc-700/80 transition-colors">
+            <div className="flex items-center justify-between text-zinc-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider">Punya Saldo</span>
+              <UserCheck className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-cyan-300 font-mono tracking-tight">
               {isLoading ? (
                 <div className="w-16 h-7 bg-zinc-800 animate-pulse rounded" />
               ) : (
-                <>
-                  <span className="font-mono">{stats.pendingWithdrawals}</span>
-                  {stats.pendingWithdrawals > 0 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full animate-pulse">
-                      Pending Approval
-                    </span>
-                  )}
-                </>
+                `${stats.usersWithBalance.toLocaleString("id-ID")} User`
               )}
             </div>
-            <div className="text-[11px] text-zinc-400 flex items-center gap-2">
-              <span>Nominal Pending: <b className="text-amber-400 font-mono">Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}</b></span>
-              <span>•</span>
-              <span>Total Sukses: <b className="text-zinc-200 font-mono">Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</b></span>
+            <p className="text-[10px] text-zinc-500">Saldo {">"} Rp 0</p>
+          </div>
+
+          {/* 4. Total Saldo yang Sudah Ditarik User */}
+          <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3.5 space-y-1 hover:border-zinc-700/80 transition-colors">
+            <div className="flex items-center justify-between text-zinc-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider">Total Ditarik</span>
+              <ArrowDownToLine className="w-4 h-4 text-amber-400" />
             </div>
+            <div className="text-xl sm:text-2xl font-bold text-amber-400 font-mono tracking-tight">
+              {isLoading ? (
+                <div className="w-20 h-7 bg-zinc-800 animate-pulse rounded" />
+              ) : (
+                `Rp ${stats.totalWithdrawn.toLocaleString("id-ID")}`
+              )}
+            </div>
+            <p className="text-[10px] text-zinc-500">Akumulasi penarikan</p>
+          </div>
+
+          {/* 5. Berapa User yang Sudah Menarik Saldo */}
+          <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3.5 space-y-1 hover:border-zinc-700/80 transition-colors">
+            <div className="flex items-center justify-between text-zinc-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider">User Menarik Saldo</span>
+              <CheckCircle2 className="w-4 h-4 text-orange-400" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight">
+              {isLoading ? (
+                <div className="w-16 h-7 bg-zinc-800 animate-pulse rounded" />
+              ) : (
+                `${stats.usersWithdrawnCount.toLocaleString("id-ID")} User`
+              )}
+            </div>
+            <p className="text-[10px] text-zinc-500">Pernah sukses withdraw</p>
+          </div>
+
+          {/* 6. Berapa x Saldo Ditarik / Berapa Transaksi */}
+          <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3.5 space-y-1 hover:border-zinc-700/80 transition-colors">
+            <div className="flex items-center justify-between text-zinc-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider">Transaksi Tarik</span>
+              <ArrowLeftRight className="w-4 h-4 text-purple-400" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight">
+              {isLoading ? (
+                <div className="w-16 h-7 bg-zinc-800 animate-pulse rounded" />
+              ) : (
+                `${stats.totalWithdrawalTransactions.toLocaleString("id-ID")}x Tarik`
+              )}
+            </div>
+            <p className="text-[10px] text-zinc-500">Frekuensi transaksi WD</p>
+          </div>
+
+          {/* 7. Berapa Gmail yang Dibuat */}
+          <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3.5 space-y-1 hover:border-zinc-700/80 transition-colors">
+            <div className="flex items-center justify-between text-zinc-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider">Gmail Dibuat</span>
+              <Mail className="w-4 h-4 text-rose-400" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-rose-400 font-mono tracking-tight">
+              {isLoading ? (
+                <div className="w-16 h-7 bg-zinc-800 animate-pulse rounded" />
+              ) : (
+                `${stats.totalGmailCreated.toLocaleString("id-ID")} Gmail`
+              )}
+            </div>
+            <p className="text-[10px] text-zinc-500">Total akun disetorkan</p>
+          </div>
+
+          {/* 8. Berapa User yang Sudah Berhasil Membuat Gmail */}
+          <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3.5 space-y-1 hover:border-zinc-700/80 transition-colors">
+            <div className="flex items-center justify-between text-zinc-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider">User Sukses Buat</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-emerald-400 font-mono tracking-tight">
+              {isLoading ? (
+                <div className="w-16 h-7 bg-zinc-800 animate-pulse rounded" />
+              ) : (
+                `${stats.usersWithGmailSuccess.toLocaleString("id-ID")} User`
+              )}
+            </div>
+            <p className="text-[10px] text-zinc-500">User dengan setoran valid</p>
           </div>
         </div>
 

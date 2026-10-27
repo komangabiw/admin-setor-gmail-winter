@@ -88,6 +88,14 @@ export function UsersTab({
     return () => clearTimeout(timeout);
   }, [search, limit]);
 
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      fetchUsers();
+    };
+    window.addEventListener("admin_refresh_all", handleGlobalRefresh);
+    return () => window.removeEventListener("admin_refresh_all", handleGlobalRefresh);
+  }, []);
+
   // Open Edit Saldo
   const handleOpenEditSaldo = (u: any) => {
     setSelectedUser(u);
@@ -237,17 +245,6 @@ export function UsersTab({
             )}{" "}
             pengguna
           </span>
-
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => fetchUsers()}
-            isLoading={isLoading}
-            className="h-8 px-2.5 text-xs flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
-            <span>Refresh</span>
-          </Button>
         </div>
       </div>
 
