@@ -10,6 +10,10 @@ import {
   RefreshCw,
   UserCheck,
   CheckCircle2,
+  Copy,
+  Check,
+  ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +49,11 @@ export function UsersTab({
   const [limit, setLimit] = useState<"50" | "100" | "all">("50");
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  // Detail User Popup Modal State
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailUser, setDetailUser] = useState<any>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   // Edit Saldo Modal State
   const [saldoModalOpen, setSaldoModalOpen] = useState(false);
@@ -248,35 +257,31 @@ export function UsersTab({
         </div>
       </div>
 
-      {/* Table Lengkap Pengguna */}
+      {/* Table Sederhana Pengguna (Cukup Pengguna, Role, Saldo, Bergabung) */}
       <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
-                <th className="py-3 px-4">Pengguna</th>
-                <th className="py-3 px-4">Role</th>
-                <th className="py-3 px-4">Kode Reff / Referral</th>
-                <th className="py-3 px-4">E-Wallet Pengguna</th>
-                <th className="py-3 px-4">Saldo Dompet</th>
-                <th className="py-3 px-4">Status Akun</th>
-                <th className="py-3 px-4">Bergabung</th>
-                <th className="py-3 px-4 text-right">Aksi Admin</th>
+                <th className="py-3.5 px-4">Pengguna</th>
+                <th className="py-3.5 px-4">Role</th>
+                <th className="py-3.5 px-4">Saldo</th>
+                <th className="py-3.5 px-4">Bergabung</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/70 text-zinc-200">
               {isLoading && users.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-zinc-500">
+                  <td colSpan={4} className="py-12 text-center text-zinc-500">
                     <div className="flex flex-col items-center gap-2">
                       <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" />
-                      <span>Memuat data pengguna lengkap dari database...</span>
+                      <span>Memuat data pengguna dari database...</span>
                     </div>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-zinc-500">
+                  <td colSpan={4} className="py-12 text-center text-zinc-500">
                     Tidak ditemukan data pengguna yang cocok.
                   </td>
                 </tr>
@@ -284,16 +289,21 @@ export function UsersTab({
                 users.map((u) => (
                   <tr
                     key={u.id}
-                    className="hover:bg-zinc-900/60 transition-colors"
+                    onClick={() => {
+                      setDetailUser(u);
+                      setDetailModalOpen(true);
+                    }}
+                    className="hover:bg-zinc-900/80 transition-colors cursor-pointer group"
+                    title="Klik untuk melihat detail lengkap pengguna"
                   >
-                    {/* User profile with Google/uploaded photo */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2.5">
+                    {/* 1. Pengguna */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-3">
                         {u.avatar_url ? (
                           <img
                             src={u.avatar_url}
                             alt={u.name}
-                            className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0"
+                            className="w-9 h-9 rounded-full object-cover border border-zinc-700 shrink-0"
                             referrerPolicy="no-referrer"
                             onError={(e) => {
                               (e.target as HTMLElement).style.display = "none";
@@ -303,25 +313,25 @@ export function UsersTab({
                           />
                         ) : null}
                         <div
-                          className={`w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 items-center justify-center font-bold text-xs shrink-0 ${
+                          className={`w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 items-center justify-center font-bold text-xs shrink-0 ${
                             u.avatar_url ? "hidden" : "flex"
                           }`}
                         >
                           {(u.name || u.email || "U").charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-zinc-100 truncate max-w-[170px]">
+                          <p className="font-semibold text-zinc-100 group-hover:text-emerald-400 transition-colors truncate max-w-[200px] sm:max-w-[280px]">
                             {u.name}
                           </p>
-                          <p className="text-[11px] text-zinc-400 truncate max-w-[170px]">
+                          <p className="text-[11px] text-zinc-400 truncate max-w-[200px] sm:max-w-[280px]">
                             {u.email}
                           </p>
                         </div>
                       </div>
                     </td>
 
-                    {/* Role */}
-                    <td className="py-3 px-4 whitespace-nowrap">
+                    {/* 2. Role */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       {u.role === "Admin" ? (
                         <Badge variant="primary" className="text-[10px]">Admin</Badge>
                       ) : (
@@ -329,60 +339,8 @@ export function UsersTab({
                       )}
                     </td>
 
-                    {/* Kode Reff User & Reff Siapa (Upline) */}
-                    <td className="py-3 px-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-zinc-500 font-medium">Reff:</span>
-                          <span className="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 text-xs">
-                            {u.referral_code || "-"}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-zinc-400 flex items-center gap-1">
-                          <span className="text-zinc-500">Upline:</span>
-                          {u.referred_by_code ? (
-                            <span className="text-zinc-200 font-mono font-medium">
-                              {u.referred_by_code}
-                              {u.referred_by_user ? ` (${u.referred_by_user.name})` : ""}
-                            </span>
-                          ) : (
-                            <span className="text-zinc-600">- (Organik)</span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* E-Wallet Pengguna */}
-                    <td className="py-3 px-4">
-                      {!u.ewallets || u.ewallets.length === 0 ? (
-                        <span className="text-zinc-600 text-[11px] italic">Belum diatur</span>
-                      ) : (
-                        <div className="space-y-1">
-                          {u.ewallets.map((ew: any, idx: number) => (
-                            <div key={`${ew.id || idx}`} className="flex items-center gap-1.5 flex-wrap">
-                              <span
-                                className={`px-1.5 py-0.2 rounded text-[9px] font-bold border uppercase tracking-wider ${getEwalletBadgeStyle(
-                                  ew.method
-                                )}`}
-                              >
-                                {ew.method || "E-WALLET"}
-                              </span>
-                              <span className="font-mono text-zinc-200 font-medium text-xs">
-                                {ew.account_number}
-                              </span>
-                              {ew.account_name && (
-                                <span className="text-[10px] text-zinc-500 truncate max-w-[100px]">
-                                  ({ew.account_name})
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Saldo Dompet */}
-                    <td className="py-3 px-4 whitespace-nowrap">
+                    {/* 3. Saldo */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <div className="font-mono">
                         <span className="font-bold text-emerald-400 text-xs sm:text-sm">
                           Rp {Number(u.balance || 0).toLocaleString("id-ID")}
@@ -393,59 +351,13 @@ export function UsersTab({
                       </div>
                     </td>
 
-                    {/* Status Akun */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      {u.is_blocked ? (
-                        <Badge variant="danger" className="text-[10px]">Diblokir</Badge>
-                      ) : (
-                        <Badge variant="success" className="text-[10px]">Aktif</Badge>
-                      )}
-                    </td>
-
-                    {/* Bergabung */}
-                    <td className="py-3 px-4 text-zinc-400 whitespace-nowrap text-[11px]">
+                    {/* 4. Bergabung */}
+                    <td className="py-3.5 px-4 text-zinc-400 whitespace-nowrap text-[11px]">
                       {new Date(u.created_at).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
                       })}
-                    </td>
-
-                    {/* Aksi Admin */}
-                    <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* Edit Saldo */}
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleOpenEditSaldo(u)}
-                          title="Ubah Saldo Pengguna"
-                          className="px-2 py-1 h-7 text-[11px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
-                        >
-                          <Wallet className="w-3.5 h-3.5" />
-                          <span>Saldo</span>
-                        </Button>
-
-
-                        {/* Toggle Block (Hanya untuk non-admin) */}
-                        {u.role !== "Admin" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleBlock(u)}
-                            title={u.is_blocked ? "Buka Blokir" : "Blokir Akun"}
-                            className={`px-2 py-1 h-7 ${
-                              u.is_blocked ? "text-emerald-400 hover:text-emerald-300" : "text-zinc-400 hover:text-amber-400"
-                            }`}
-                          >
-                            {u.is_blocked ? (
-                              <CheckCircle className="w-3.5 h-3.5" />
-                            ) : (
-                              <Ban className="w-3.5 h-3.5" />
-                            )}
-                          </Button>
-                        )}
-                      </div>
                     </td>
                   </tr>
                 ))
@@ -457,10 +369,178 @@ export function UsersTab({
         {limit !== "all" && totalUsers > users.length && (
           <div className="p-3 bg-zinc-950/90 border-t border-zinc-800/80 text-xs text-zinc-400">
             Menampilkan <b className="text-zinc-200">{users.length}</b> dari{" "}
-            <b className="text-zinc-200">{totalUsers}</b> pengguna
+            <b className="text-zinc-200">{totalUsers}</b> pengguna (Klik baris pengguna untuk informasi lebih lanjut)
           </div>
         )}
       </div>
+
+      {/* Popup Informasi Lebih Lanjut Pengguna */}
+      <Modal
+        isOpen={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        title="Informasi Lengkap Pengguna"
+        subtitle={detailUser?.email}
+        maxWidth="lg"
+      >
+        {detailUser && (
+          <div className="space-y-4">
+            {/* Header Profil User */}
+            <div className="flex items-center gap-3 p-3.5 bg-zinc-950/80 rounded-xl border border-zinc-800">
+              {detailUser.avatar_url ? (
+                <img
+                  src={detailUser.avatar_url}
+                  alt={detailUser.name}
+                  className="w-12 h-12 rounded-full object-cover border border-zinc-700 shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 flex items-center justify-center font-bold text-base shrink-0">
+                  {(detailUser.name || detailUser.email || "U").charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-bold text-white text-sm truncate">{detailUser.name}</h4>
+                  <Badge variant={detailUser.role === "Admin" ? "primary" : "neutral"} className="text-[10px]">
+                    {detailUser.role}
+                  </Badge>
+                  <Badge variant={detailUser.is_blocked ? "danger" : "success"} className="text-[10px]">
+                    {detailUser.is_blocked ? "Diblokir" : "Aktif"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-zinc-400 truncate mt-0.5">{detailUser.email}</p>
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  Bergabung: {new Date(detailUser.created_at).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {/* Saldo Dompet & Keuangan */}
+            <div className="grid grid-cols-2 gap-3 p-3.5 bg-zinc-950/60 rounded-xl border border-zinc-800/80">
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Saldo Dompet Saat Ini</span>
+                <p className="text-lg font-bold font-mono text-emerald-400 mt-0.5">
+                  Rp {Number(detailUser.balance || 0).toLocaleString("id-ID")}
+                </p>
+              </div>
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Total Telah Ditarik</span>
+                <p className="text-lg font-bold font-mono text-zinc-200 mt-0.5">
+                  Rp {Number(detailUser.total_withdrawn || 0).toLocaleString("id-ID")}
+                </p>
+              </div>
+            </div>
+
+            {/* Kode Referral & Upline */}
+            <div className="p-3.5 bg-zinc-950/60 rounded-xl border border-zinc-800/80 space-y-2.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Referral & Afiliasi</span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-zinc-400">Kode Reff Sendiri:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    {detailUser.referral_code || "-"}
+                  </span>
+                  {detailUser.referral_code && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (navigator?.clipboard) {
+                          navigator.clipboard.writeText(detailUser.referral_code);
+                          setCopiedCode(true);
+                          setTimeout(() => setCopiedCode(false), 1500);
+                        }
+                      }}
+                      className="p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                      title="Salin Kode Reff"
+                    >
+                      {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-zinc-400">Upline (Direkrut Oleh):</span>
+                <span className="font-mono text-zinc-200">
+                  {detailUser.referred_by_code ? (
+                    `${detailUser.referred_by_code} ${detailUser.referred_by_user?.name ? `(${detailUser.referred_by_user.name})` : ""}`
+                  ) : (
+                    <span className="text-zinc-500">- (Organik)</span>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* E-Wallet Pengguna */}
+            <div className="p-3.5 bg-zinc-950/60 rounded-xl border border-zinc-800/80 space-y-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">E-Wallet / Rekening Tersimpan</span>
+              {!detailUser.ewallets || detailUser.ewallets.length === 0 ? (
+                <p className="text-zinc-500 text-xs italic">Pengguna belum mengatur akun e-wallet / rekening bank.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {detailUser.ewallets.map((ew: any, idx: number) => (
+                    <div key={`${ew.id || idx}`} className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${getEwalletBadgeStyle(ew.method)}`}>
+                          {ew.method || "E-WALLET"}
+                        </span>
+                        <span className="font-mono text-white font-semibold">{ew.account_number}</span>
+                      </div>
+                      {ew.account_name && (
+                        <span className="text-zinc-400 text-[11px]">a.n. {ew.account_name}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Aksi Admin */}
+            <div className="pt-2 flex items-center justify-between gap-2.5">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setDetailModalOpen(false);
+                  handleOpenEditSaldo(detailUser);
+                }}
+                className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-semibold text-xs flex items-center justify-center gap-1.5 h-9"
+              >
+                <Wallet className="w-4 h-4" />
+                <span>Kelola Saldo Pengguna</span>
+              </Button>
+
+              {detailUser.role !== "Admin" && (
+                <Button
+                  variant="ghost"
+                  onClick={async () => {
+                    await handleToggleBlock(detailUser);
+                    setDetailUser((prev: any) => (prev ? { ...prev, is_blocked: !prev?.is_blocked } : prev));
+                  }}
+                  className={`px-3.5 text-xs h-9 border font-semibold ${
+                    detailUser.is_blocked
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                      : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
+                  }`}
+                >
+                  {detailUser.is_blocked ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-1.5" />
+                      <span>Buka Blokir</span>
+                    </>
+                  ) : (
+                    <>
+                      <Ban className="w-4 h-4 mr-1.5" />
+                      <span>Blokir Akun</span>
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Edit Saldo Modal */}
       <Modal
