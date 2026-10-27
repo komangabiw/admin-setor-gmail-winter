@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/line-charts-9';
-import { RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, XAxis, YAxis } from 'recharts';
 
@@ -218,11 +218,10 @@ export function LineChart9({
                   key={d}
                   type="button"
                   onClick={() => handleTimeframeSelect(d)}
-                  className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer border ${
-                    activeTimeframe === d
+                  className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer border ${activeTimeframe === d
                       ? 'bg-zinc-800 text-purple-400 font-semibold border-zinc-700/80 shadow-xs'
                       : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border-transparent'
-                  }`}
+                    }`}
                 >
                   {d}
                 </button>
@@ -251,10 +250,10 @@ export function LineChart9({
                   {isBalanceHidden
                     ? 'Rp ***'
                     : hargaGmail !== undefined
-                    ? typeof hargaGmail === 'number'
-                      ? `Rp ${hargaGmail.toLocaleString('id-ID')}`
-                      : hargaGmail
-                    : 'Rp 4.500'}
+                      ? typeof hargaGmail === 'number'
+                        ? `Rp ${hargaGmail.toLocaleString('id-ID')}`
+                        : hargaGmail
+                      : 'Rp 4.500'}
                 </span>
               </div>
             </div>
