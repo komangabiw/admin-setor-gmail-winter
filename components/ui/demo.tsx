@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/line-charts-9';
-import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, XAxis, YAxis } from 'recharts';
 
@@ -329,12 +329,15 @@ export function LineChart9({
               />
 
               <Line
+                key={activeTimeframe}
                 type="monotone"
                 dataKey="value"
                 stroke={lineColor}
                 strokeWidth={2.5}
                 filter="url(#lineShadow)"
-                isAnimationActive={false}
+                isAnimationActive={true}
+                animationDuration={600}
+                animationEasing="ease-in-out"
                 dot={(props) => {
                   const { cx, cy, payload } = props;
                   if (

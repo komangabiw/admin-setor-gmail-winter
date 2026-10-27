@@ -45,7 +45,7 @@ function getEwalletBadgeStyle(method: string) {
   return "bg-zinc-800 text-zinc-300 border-zinc-700";
 }
 
-export function UsersTab({
+export const UsersTab = React.memo(function UsersTab({
   onUserUpdated,
 }: {
   onUserUpdated?: () => void;
@@ -764,4 +764,4 @@ export function UsersTab({
       </Modal>
     </div>
   );
-}
+});

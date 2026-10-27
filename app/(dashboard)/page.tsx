@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Users,
   Wallet,
@@ -88,6 +88,10 @@ export default function DashboardOverviewPage() {
       window.dispatchEvent(new CustomEvent("admin_refresh_all"));
     }
   };
+
+  const handleUserUpdated = useCallback(() => {
+    fetchStats(false);
+  }, []);
 
   useEffect(() => {
     fetchStats();
@@ -617,7 +621,7 @@ export default function DashboardOverviewPage() {
 
             {/* 2. Tab Daftar Pengguna */}
             {activeTab === "users" && (
-              <UsersTab onUserUpdated={() => fetchStats(false)} />
+              <UsersTab onUserUpdated={handleUserUpdated} />
             )}
           </div>
         </div>
