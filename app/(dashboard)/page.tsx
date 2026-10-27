@@ -33,7 +33,7 @@ export default function DashboardOverviewPage() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"transactions" | "users">("transactions");
+  const [activeTab, setActiveTab] = useState<"transactions" | "users">("users");
   const [timeframe, setTimeframe] = useState<string>("7D");
   const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -391,7 +391,24 @@ export default function DashboardOverviewPage() {
           {/* Tab Header (Merged: Transaksi & Daftar Pengguna) */}
           <div className="flex items-center justify-between border-b border-zinc-800 px-3 pt-2 pb-0 bg-zinc-950/40 overflow-x-auto">
             <div className="flex items-center gap-1">
-              {/* Tab 1: Transaksi (Gabungan Mutasi Transaksi & Withdraw) */}
+              {/* Tab 1: Daftar Pengguna (Sebelah Kiri) */}
+              <button
+                type="button"
+                onClick={() => setActiveTab("users")}
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-colors cursor-pointer ${
+                  activeTab === "users"
+                    ? "border-blue-500 text-blue-400 bg-zinc-900/60"
+                    : "border-transparent text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Daftar Pengguna</span>
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300">
+                  {stats.totalUsers}
+                </span>
+              </button>
+
+              {/* Tab 2: Transaksi (Sebelah Kanan) */}
               <button
                 type="button"
                 onClick={() => setActiveTab("transactions")}
@@ -412,23 +429,6 @@ export default function DashboardOverviewPage() {
                     {data?.recentTransactions?.length || 0}
                   </span>
                 )}
-              </button>
-
-              {/* Tab 2: Daftar Pengguna */}
-              <button
-                type="button"
-                onClick={() => setActiveTab("users")}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-colors cursor-pointer ${
-                  activeTab === "users"
-                    ? "border-blue-500 text-blue-400 bg-zinc-900/60"
-                    : "border-transparent text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Daftar Pengguna</span>
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300">
-                  {stats.totalUsers}
-                </span>
               </button>
             </div>
           </div>

@@ -57,8 +57,8 @@ export function UsersTab({
   const [search, setSearch] = useState("");
 
   // Sorting state (Saldo & Bergabung)
-  const [sortField, setSortField] = useState<SortField>("created_at");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder | null>(null);
 
   // Detail User Popup Modal State
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -220,26 +220,41 @@ export function UsersTab({
 
   const handleToggleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
+      if (sortOrder === "asc") {
+        setSortOrder("desc"); // ke bawah
+      } else if (sortOrder === "desc") {
+        setSortField(null); // normal
+        setSortOrder(null);
+      } else {
+        setSortOrder("asc");
+      }
     } else {
       setSortField(field);
-      setSortOrder("desc");
+      setSortOrder("asc"); // ke atas dlu
     }
   };
 
   const sortedUsers = React.useMemo(() => {
     return [...users].sort((a: any, b: any) => {
-      if (sortField === "balance") {
+      // 1. Admin SELALU tetap di atas, tidak terpengaruh sort saldo atau bergabung!
+      const aIsAdmin = a.role === "Admin" ? 1 : 0;
+      const bIsAdmin = b.role === "Admin" ? 1 : 0;
+      if (aIsAdmin !== bIsAdmin) return bIsAdmin - aIsAdmin;
+
+      // 2. Sort jika aktif
+      if (sortField === "balance" && sortOrder) {
         const balA = Number(a.balance || 0);
         const balB = Number(b.balance || 0);
-        return sortOrder === "desc" ? balB - balA : balA - balB;
+        return sortOrder === "asc" ? balA - balB : balB - balA;
       }
-      if (sortField === "created_at") {
+      if (sortField === "created_at" && sortOrder) {
         const timeA = new Date(a.created_at).getTime();
         const timeB = new Date(b.created_at).getTime();
-        return sortOrder === "desc" ? timeB - timeA : timeA - timeB;
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
       }
-      return 0;
+
+      // 3. Normal / default (terbaru ke terlama)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
   }, [users, sortField, sortOrder]);
 
@@ -301,20 +316,20 @@ export function UsersTab({
             <thead>
               <tr className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-3.5 px-4">Pengguna</th>
-                <th className="py-3.5 px-4">Role</th>
                 <th className="py-3.5 px-4">UID</th>
+                <th className="py-3.5 px-4">Role</th>
                 <th
                   onClick={() => handleToggleSort("balance")}
                   className="py-3.5 px-4 cursor-pointer hover:text-zinc-200 transition-colors select-none group"
-                  title="Klik untuk mengurutkan saldo (tertinggi/terendah)"
+                  title="Klik untuk mengurutkan saldo (atas / bawah / normal)"
                 >
                   <div className="flex items-center gap-1.5">
                     <span>Saldo</span>
                     {sortField === "balance" ? (
-                      sortOrder === "desc" ? (
-                        <ArrowDown className="w-3.5 h-3.5 text-emerald-400" />
-                      ) : (
+                      sortOrder === "asc" ? (
                         <ArrowUp className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5 text-emerald-400" />
                       )
                     ) : (
                       <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
@@ -324,15 +339,15 @@ export function UsersTab({
                 <th
                   onClick={() => handleToggleSort("created_at")}
                   className="py-3.5 px-4 cursor-pointer hover:text-zinc-200 transition-colors select-none group"
-                  title="Klik untuk mengurutkan tanggal bergabung (baru/lama)"
+                  title="Klik untuk mengurutkan tanggal bergabung (atas / bawah / normal)"
                 >
                   <div className="flex items-center gap-1.5">
                     <span>Bergabung</span>
                     {sortField === "created_at" ? (
-                      sortOrder === "desc" ? (
-                        <ArrowDown className="w-3.5 h-3.5 text-emerald-400" />
-                      ) : (
+                      sortOrder === "asc" ? (
                         <ArrowUp className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5 text-emerald-400" />
                       )
                     ) : (
                       <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
@@ -402,23 +417,14 @@ export function UsersTab({
                       </div>
                     </td>
 
-                    {/* 2. Role */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      {u.role === "Admin" ? (
-                        <Badge variant="primary" className="text-[10px]">Admin</Badge>
-                      ) : (
-                        <Badge variant="neutral" className="text-[10px]">Pengguna</Badge>
-                      )}
-                    </td>
-
-                    {/* 3. UID */}
+                    {/* 2. UID (Full, disebelah kiri role) */}
                     <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1.5">
                         <span
                           className="font-mono text-[11px] text-zinc-300 bg-zinc-900/90 px-2 py-0.5 rounded border border-zinc-800 select-all"
                           title={u.id}
                         >
-                          {u.id ? `${u.id.substring(0, 8)}...` : "-"}
+                          {u.id || "-"}
                         </span>
                         {u.id && (
                           <button
@@ -430,7 +436,7 @@ export function UsersTab({
                                 setTimeout(() => setCopiedUidMap((prev) => ({ ...prev, [u.id]: false })), 1500);
                               }
                             }}
-                            className="p-1 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                            className="p-1 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors shrink-0"
                             title="Salin UID"
                           >
                             {copiedUidMap[u.id] ? (
@@ -441,6 +447,15 @@ export function UsersTab({
                           </button>
                         )}
                       </div>
+                    </td>
+
+                    {/* 3. Role */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      {u.role === "Admin" ? (
+                        <Badge variant="primary" className="text-[10px]">Admin</Badge>
+                      ) : (
+                        <Badge variant="neutral" className="text-[10px]">User</Badge>
+                      )}
                     </td>
 
                     {/* 4. Saldo */}
@@ -505,7 +520,7 @@ export function UsersTab({
                 <div className="flex items-center gap-2 flex-wrap">
                   <h4 className="font-bold text-white text-sm truncate">{detailUser.name}</h4>
                   <Badge variant={detailUser.role === "Admin" ? "primary" : "neutral"} className="text-[10px]">
-                    {detailUser.role}
+                    {detailUser.role === "Admin" ? "Admin" : "User"}
                   </Badge>
                   <Badge variant={detailUser.is_blocked ? "danger" : "success"} className="text-[10px]">
                     {detailUser.is_blocked ? "Diblokir" : "Aktif"}
