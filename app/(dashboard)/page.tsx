@@ -34,7 +34,23 @@ export default function DashboardOverviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"transactions" | "users">("transactions");
-  const [timeframe, setTimeframe] = useState<string>("30D");
+  const [timeframe, setTimeframe] = useState<string>("7D");
+  const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("admin_hide_balance") === "true";
+    }
+    return false;
+  });
+
+  const toggleHideBalance = () => {
+    setIsBalanceHidden((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("admin_hide_balance", String(next));
+      }
+      return next;
+    });
+  };
 
   // Quick Balance Modal
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
@@ -197,6 +213,8 @@ export default function DashboardOverviewPage() {
         onTimeframeChange={(d) => setTimeframe(d)}
         gmailDisetor={stats.totalGmailCreated}
         hargaGmail={stats.gmailPrice || 4500}
+        isBalanceHidden={isBalanceHidden}
+        onToggleHideBalance={toggleHideBalance}
       />
 
       {/* 1 Kolom Terpadu: Ekosistem & Likuiditas User (3 Section) */}
@@ -230,7 +248,7 @@ export default function DashboardOverviewPage() {
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400 animate-bounce shrink-0" />
                 <span>{stats.pendingWithdrawals} Antrean WD Butuh Diproses</span>
                 <span className="font-mono text-white bg-amber-500/30 px-1.5 py-0.2 rounded text-[10px]">
-                  Rp {stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}
+                  Rp {isBalanceHidden ? "***" : stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}
                 </span>
               </button>
             ) : (
@@ -298,6 +316,8 @@ export default function DashboardOverviewPage() {
               <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
                 {isLoading ? (
                   <div className="w-28 h-6 bg-zinc-800 animate-pulse rounded" />
+                ) : isBalanceHidden ? (
+                  "Rp ***"
                 ) : (
                   `Rp ${stats.totalBalance.toLocaleString("id-ID")}`
                 )}
@@ -314,6 +334,8 @@ export default function DashboardOverviewPage() {
               <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
                 {isLoading ? (
                   <div className="w-24 h-6 bg-zinc-800 animate-pulse rounded" />
+                ) : isBalanceHidden ? (
+                  "Rp ***"
                 ) : (
                   `Rp ${stats.totalWithdrawn.toLocaleString("id-ID")}`
                 )}

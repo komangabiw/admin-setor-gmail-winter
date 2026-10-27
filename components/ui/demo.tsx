@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/line-charts-9';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, XAxis, YAxis } from 'recharts';
 
@@ -96,15 +96,15 @@ interface TooltipProps {
   label?: string;
 }
 
-const CustomTooltip = ({ active, payload, isSetor }: TooltipProps & { isSetor?: boolean }) => {
+const CustomTooltip = ({ active, payload, isSetor, isBalanceHidden }: TooltipProps & { isSetor?: boolean; isBalanceHidden?: boolean }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 shadow-xl text-xs">
         <div className="text-zinc-400 mb-1">{data.date}</div>
         <div className="flex items-center gap-2">
-          <div className="font-bold text-white">
-            Rp {(data.value * 1000).toLocaleString('id-ID')}
+          <div className="font-bold text-white font-mono">
+            {isBalanceHidden ? 'Rp ***' : `Rp ${(data.value * 1000).toLocaleString('id-ID')}`}
           </div>
           <div className={`text-[11px] font-semibold ${isSetor ? 'text-emerald-400' : 'text-rose-400'}`}>
             {isSetor ? '+12.7%' : '-4.2%'}
@@ -120,10 +120,12 @@ export function LineChart9({
   className = '',
   onRefresh,
   isRefreshing,
-  timeframe = '30D',
+  timeframe = '7D',
   onTimeframeChange,
   gmailDisetor,
   hargaGmail,
+  isBalanceHidden = false,
+  onToggleHideBalance,
 }: {
   className?: string;
   onRefresh?: () => void;
@@ -132,9 +134,11 @@ export function LineChart9({
   onTimeframeChange?: (period: string) => void;
   gmailDisetor?: number | string;
   hargaGmail?: number | string;
+  isBalanceHidden?: boolean;
+  onToggleHideBalance?: () => void;
 }) {
   const [selectedMetric, setSelectedMetric] = useState<'setor' | 'pengeluaran'>('setor');
-  const [internalTimeframe, setInternalTimeframe] = useState<string>('30D');
+  const [internalTimeframe, setInternalTimeframe] = useState<string>('7D');
 
   const activeTimeframe = timeframe || internalTimeframe;
   const handleTimeframeSelect = (period: string) => {
@@ -149,17 +153,19 @@ export function LineChart9({
 
   // Filter data based on active timeframe
   const activeData = React.useMemo(() => {
-    if (activeTimeframe === '1D') return baseData.slice(-3);
-    if (activeTimeframe === '3D') return baseData.slice(-6);
-    if (activeTimeframe === '7D') return baseData.slice(-12);
-    if (activeTimeframe === '14D') return baseData.slice(-20);
+    if (activeTimeframe === '1D') return baseData.slice(-4);
+    if (activeTimeframe === '3D') return baseData.slice(-7);
+    if (activeTimeframe === '7D') return baseData.slice(-14);
+    if (activeTimeframe === '14D') return baseData.slice(-21);
     return baseData;
   }, [baseData, activeTimeframe]);
 
   const currentTotal = isSetor ? 24847830 : 6420000;
-  const todayAmount = isSetor ? 1249000 : 350000;
   const highVal = Math.max(...activeData.map((d) => d.value));
   const lowVal = Math.min(...activeData.map((d) => d.value));
+
+  const refItem = activeData.find((d) => d.date === 'Jan 17') || activeData[Math.floor(activeData.length / 2)];
+  const refDate = refItem?.date;
 
   const lineColor = isSetor ? '#c084fc' : '#fb7185';
   const strokeGlow = isSetor ? 'rgba(168, 85, 247, 0.7)' : 'rgba(244, 63, 94, 0.7)';
@@ -170,10 +176,24 @@ export function LineChart9({
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
           <div className="space-y-1.5">
-            <div className="flex flex-wrap items-baseline gap-2 sm:gap-3.5">
+            <div className="flex items-center gap-2.5">
               <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                Rp {currentTotal.toLocaleString('id-ID')}
+                {isBalanceHidden ? 'Rp ***' : `Rp ${currentTotal.toLocaleString('id-ID')}`}
               </span>
+              {onToggleHideBalance && (
+                <button
+                  type="button"
+                  onClick={onToggleHideBalance}
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title={isBalanceHidden ? 'Tampilkan Angka' : 'Sembunyikan Angka'}
+                >
+                  {isBalanceHidden ? (
+                    <EyeOff className="w-5 h-5 text-zinc-400 hover:text-zinc-200" />
+                  ) : (
+                    <Eye className="w-5 h-5 text-zinc-400 hover:text-zinc-200" />
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
@@ -186,22 +206,22 @@ export function LineChart9({
                 disabled={isRefreshing}
                 className="h-9 px-4 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-600 text-zinc-100 transition-all cursor-pointer shadow-sm disabled:opacity-50"
               >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
               </button>
             )}
 
-            {/* Timeframe Selector with 1D, 3D, 7D, 14D, 30D */}
+            {/* Timeframe Selector with 1D, 3D, 7D, 14D, 30D (with locked borders to avoid layout shift) */}
             <div className="flex items-center gap-1 bg-zinc-950/80 p-0.5 rounded-lg border border-zinc-800">
               {['1D', '3D', '7D', '14D', '30D'].map((d) => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => handleTimeframeSelect(d)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                  className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer border ${
                     activeTimeframe === d
-                      ? "bg-zinc-800 text-purple-400 font-semibold border border-zinc-700/80 shadow-xs"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                      ? 'bg-zinc-800 text-purple-400 font-semibold border-zinc-700/80 shadow-xs'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border-transparent'
                   }`}
                 >
                   {d}
@@ -219,15 +239,21 @@ export function LineChart9({
                 <span className="text-zinc-400">Gmail Disetor :</span>
                 <span className="font-semibold text-white font-mono">
                   {gmailDisetor !== undefined
-                    ? (typeof gmailDisetor === 'number' ? `${gmailDisetor.toLocaleString('id-ID')} Akun` : gmailDisetor)
+                    ? typeof gmailDisetor === 'number'
+                      ? `${gmailDisetor.toLocaleString('id-ID')} Akun`
+                      : gmailDisetor
                     : '2 Akun'}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-zinc-400">Harga Gmail :</span>
                 <span className="font-semibold text-emerald-400 font-mono">
-                  {hargaGmail !== undefined
-                    ? (typeof hargaGmail === 'number' ? `Rp ${hargaGmail.toLocaleString('id-ID')}` : hargaGmail)
+                  {isBalanceHidden
+                    ? 'Rp ***'
+                    : hargaGmail !== undefined
+                    ? typeof hargaGmail === 'number'
+                      ? `Rp ${hargaGmail.toLocaleString('id-ID')}`
+                      : hargaGmail
                     : 'Rp 4.500'}
                 </span>
               </div>
@@ -237,7 +263,7 @@ export function LineChart9({
           {/* Chart */}
           <ChartContainer
             config={chartConfig}
-            className="h-72 sm:h-80 w-full [&_.recharts-curve.recharts-tooltip-cursor]:stroke-initial"
+            className="h-72 sm:h-80 w-full min-w-0 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-initial"
           >
             <ComposedChart
               data={activeData}
@@ -275,28 +301,31 @@ export function LineChart9({
               />
 
               {/* Active tick reference line */}
-              <ReferenceLine x="Jan 17" stroke={lineColor} strokeDasharray="4 4" strokeWidth={1} />
+              {refDate && (
+                <ReferenceLine x={refDate} stroke={lineColor} strokeDasharray="4 4" strokeWidth={1} />
+              )}
 
               <XAxis
                 dataKey="date"
                 axisLine={false}
                 tickLine={false}
+                height={30}
                 tick={{ fontSize: 11, fill: '#a1a1aa' }}
-                tickMargin={12}
+                tickMargin={8}
                 interval="preserveStartEnd"
-                tickCount={6}
               />
 
               <YAxis
                 axisLine={false}
                 tickLine={false}
+                width={48}
                 tick={{ fontSize: 11, fill: '#a1a1aa' }}
                 tickFormatter={(value) => `${(value / 1000).toFixed(1)}k`}
-                tickMargin={12}
+                tickMargin={8}
               />
 
               <ChartTooltip
-                content={<CustomTooltip isSetor={isSetor} />}
+                content={<CustomTooltip isSetor={isSetor} isBalanceHidden={isBalanceHidden} />}
                 cursor={{ strokeDasharray: '3 3', stroke: '#71717a', strokeOpacity: 0.5 }}
               />
 
@@ -306,9 +335,14 @@ export function LineChart9({
                 stroke={lineColor}
                 strokeWidth={2.5}
                 filter="url(#lineShadow)"
+                isAnimationActive={false}
                 dot={(props) => {
                   const { cx, cy, payload } = props;
-                  if (payload.date === 'Jan 17' || payload.value > (isSetor ? 2800 : 850) || payload.value < (isSetor ? 1000 : 400)) {
+                  if (
+                    payload.date === refDate ||
+                    payload.value === highVal ||
+                    payload.value === lowVal
+                  ) {
                     return (
                       <circle
                         key={`dot-${payload.date}`}
