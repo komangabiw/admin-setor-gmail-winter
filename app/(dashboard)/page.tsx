@@ -305,12 +305,11 @@ export default function DashboardOverviewPage() {
             </div>
 
             <div className="border-t border-zinc-800/80 pt-3 mt-3.5 flex-1 flex flex-col justify-center">
-              <div className="flex items-center justify-between text-white mb-1">
+              <div className="flex items-center text-white mb-1">
                 <span className="text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 text-white">
                   <ArrowDownToLine className="w-3.5 h-3.5 text-white" />
                   Saldo Ditarik
                 </span>
-                <span className="text-[10px] text-zinc-400 font-medium">Penarikan Sukses</span>
               </div>
               <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
                 {isLoading ? (

@@ -14,11 +14,17 @@ import {
   Check,
   ChevronRight,
   ExternalLink,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Textarea } from "@/components/ui/input";
+
+type SortField = "created_at" | "balance";
+type SortOrder = "asc" | "desc";
 
 function getEwalletBadgeStyle(method: string) {
   const m = (method || "").toUpperCase();
@@ -50,10 +56,16 @@ export function UsersTab({
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
 
+  // Sorting state (Saldo & Bergabung)
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
   // Detail User Popup Modal State
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<any>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedUid, setCopiedUid] = useState(false);
+  const [copiedUidMap, setCopiedUidMap] = useState<Record<string, boolean>>({});
 
   // Edit Saldo Modal State
   const [saldoModalOpen, setSaldoModalOpen] = useState(false);
@@ -206,6 +218,31 @@ export function UsersTab({
     }
   };
 
+  const handleToggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
+    } else {
+      setSortField(field);
+      setSortOrder("desc");
+    }
+  };
+
+  const sortedUsers = React.useMemo(() => {
+    return [...users].sort((a: any, b: any) => {
+      if (sortField === "balance") {
+        const balA = Number(a.balance || 0);
+        const balB = Number(b.balance || 0);
+        return sortOrder === "desc" ? balB - balA : balA - balB;
+      }
+      if (sortField === "created_at") {
+        const timeA = new Date(a.created_at).getTime();
+        const timeB = new Date(b.created_at).getTime();
+        return sortOrder === "desc" ? timeB - timeA : timeA - timeB;
+      }
+      return 0;
+    });
+  }, [users, sortField, sortOrder]);
+
   return (
     <div className="space-y-4">
       {/* Search & Action Bar */}
@@ -257,7 +294,7 @@ export function UsersTab({
         </div>
       </div>
 
-      {/* Table Sederhana Pengguna (Cukup Pengguna, Role, Saldo, Bergabung) */}
+      {/* Table Sederhana Pengguna (Pengguna, Role, UID, Saldo, Bergabung) */}
       <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
@@ -265,28 +302,63 @@ export function UsersTab({
               <tr className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-3.5 px-4">Pengguna</th>
                 <th className="py-3.5 px-4">Role</th>
-                <th className="py-3.5 px-4">Saldo</th>
-                <th className="py-3.5 px-4">Bergabung</th>
+                <th className="py-3.5 px-4">UID</th>
+                <th
+                  onClick={() => handleToggleSort("balance")}
+                  className="py-3.5 px-4 cursor-pointer hover:text-zinc-200 transition-colors select-none group"
+                  title="Klik untuk mengurutkan saldo (tertinggi/terendah)"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Saldo</span>
+                    {sortField === "balance" ? (
+                      sortOrder === "desc" ? (
+                        <ArrowDown className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <ArrowUp className="w-3.5 h-3.5 text-emerald-400" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleToggleSort("created_at")}
+                  className="py-3.5 px-4 cursor-pointer hover:text-zinc-200 transition-colors select-none group"
+                  title="Klik untuk mengurutkan tanggal bergabung (baru/lama)"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Bergabung</span>
+                    {sortField === "created_at" ? (
+                      sortOrder === "desc" ? (
+                        <ArrowDown className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <ArrowUp className="w-3.5 h-3.5 text-emerald-400" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+                    )}
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/70 text-zinc-200">
               {isLoading && users.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-12 text-center text-zinc-500">
+                  <td colSpan={5} className="py-12 text-center text-zinc-500">
                     <div className="flex flex-col items-center gap-2">
                       <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" />
                       <span>Memuat data pengguna dari database...</span>
                     </div>
                   </td>
                 </tr>
-              ) : users.length === 0 ? (
+              ) : sortedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-12 text-center text-zinc-500">
+                  <td colSpan={5} className="py-12 text-center text-zinc-500">
                     Tidak ditemukan data pengguna yang cocok.
                   </td>
                 </tr>
               ) : (
-                users.map((u) => (
+                sortedUsers.map((u) => (
                   <tr
                     key={u.id}
                     onClick={() => {
@@ -339,7 +411,39 @@ export function UsersTab({
                       )}
                     </td>
 
-                    {/* 3. Saldo */}
+                    {/* 3. UID */}
+                    <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="font-mono text-[11px] text-zinc-300 bg-zinc-900/90 px-2 py-0.5 rounded border border-zinc-800 select-all"
+                          title={u.id}
+                        >
+                          {u.id ? `${u.id.substring(0, 8)}...` : "-"}
+                        </span>
+                        {u.id && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (navigator?.clipboard) {
+                                navigator.clipboard.writeText(u.id);
+                                setCopiedUidMap((prev) => ({ ...prev, [u.id]: true }));
+                                setTimeout(() => setCopiedUidMap((prev) => ({ ...prev, [u.id]: false })), 1500);
+                              }
+                            }}
+                            className="p-1 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                            title="Salin UID"
+                          >
+                            {copiedUidMap[u.id] ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* 4. Saldo */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <div className="font-mono">
                         <span className="font-bold text-emerald-400 text-xs sm:text-sm">
@@ -351,7 +455,7 @@ export function UsersTab({
                       </div>
                     </td>
 
-                    {/* 4. Bergabung */}
+                    {/* 5. Bergabung */}
                     <td className="py-3.5 px-4 text-zinc-400 whitespace-nowrap text-[11px]">
                       {new Date(u.created_at).toLocaleDateString("id-ID", {
                         day: "numeric",
@@ -415,6 +519,30 @@ export function UsersTab({
                     year: "numeric",
                   })}
                 </p>
+              </div>
+            </div>
+
+            {/* User ID (UID) */}
+            <div className="flex items-center justify-between p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-xs">
+              <span className="text-zinc-400 font-medium">User ID (UID):</span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono text-zinc-300 font-semibold select-all text-[11px] bg-zinc-900/90 px-2 py-0.5 rounded border border-zinc-800">
+                  {detailUser.id}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (navigator?.clipboard) {
+                      navigator.clipboard.writeText(detailUser.id);
+                      setCopiedUid(true);
+                      setTimeout(() => setCopiedUid(false), 1500);
+                    }
+                  }}
+                  className="p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                  title="Salin UID"
+                >
+                  {copiedUid ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
               </div>
             </div>
 

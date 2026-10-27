@@ -130,6 +130,7 @@ export async function GET(req: NextRequest) {
         const matchesBasic =
           u.name.toLowerCase().includes(search) ||
           u.email.toLowerCase().includes(search) ||
+          (u.id && u.id.toLowerCase().includes(search)) ||
           (u.dana_number && u.dana_number.includes(search)) ||
           (u.referral_code && u.referral_code.toLowerCase().includes(search)) ||
           (u.referred_by_code && u.referred_by_code.toLowerCase().includes(search));
