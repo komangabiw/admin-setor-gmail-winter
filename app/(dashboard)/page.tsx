@@ -343,14 +343,11 @@ export default function DashboardOverviewPage() {
                 <span className="text-[11px] font-semibold uppercase tracking-wider">Gmail Digenerate</span>
                 <Mail className="w-4 h-4 text-rose-400" />
               </div>
-              <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none flex items-baseline gap-1.5">
+              <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
                 {isLoading ? (
                   <div className="w-20 h-6 bg-zinc-800 animate-pulse rounded" />
                 ) : (
-                  <>
-                    <span>{stats.totalGmailCreated.toLocaleString("id-ID")}</span>
-                    <span className="text-xs font-normal text-zinc-400 font-sans">Akun Gmail</span>
-                  </>
+                  `${stats.totalGmailCreated.toLocaleString("id-ID")} Akun Gmail`
                 )}
               </div>
             </div>
