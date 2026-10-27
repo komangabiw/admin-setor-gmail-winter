@@ -32,6 +32,7 @@ export default function DashboardOverviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"transactions" | "users">("transactions");
+  const [timeframe, setTimeframe] = useState<string>("30 hari");
 
   // Quick Balance Modal
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
@@ -166,16 +167,14 @@ export default function DashboardOverviewPage() {
     totalTransactionsCount: 0,
   };
 
-  const avgBalance = stats.totalMembers > 0 ? Math.round(stats.totalBalance / stats.totalMembers) : 0;
   const totalFlow = stats.totalBalance + stats.totalWithdrawn;
-  const memberPercent = stats.totalUsers > 0 ? Math.round((stats.totalMembers / stats.totalUsers) * 100) : 0;
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto pb-10">
       {/* Revenue & Balance Flow Line Chart with Refresh Button */}
       <LineChart9 onRefresh={() => fetchStats(false)} isRefreshing={isRefreshing} />
 
-      {/* 1 Kolom Terpadu: Ringkasan Likuiditas & Ekosistem Pengguna (Semua Data Masuk dalam 1 Tampilan Tanpa Kotak Terpisah) */}
+      {/* 1 Kolom Terpadu: Ekosistem & Likuiditas User */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 shadow-sm space-y-4">
         {/* Header Insight */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
@@ -183,22 +182,17 @@ export default function DashboardOverviewPage() {
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
               <TrendingUp className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-white tracking-tight">
-                  Ringkasan Likuiditas & Ekosistem Pengguna
-                </h3>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Live Insight
-                </span>
-              </div>
-              <p className="text-[11px] text-zinc-400 mt-0.5">
-                Monitoring menyeluruh perputaran saldo, pencairan dana, dan distribusi komunitas member.
-              </p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white tracking-tight">
+                Ekosistem & Likuiditas User
+              </h3>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Live Insight
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-col sm:items-end gap-2 shrink-0">
             {stats.pendingWithdrawals > 0 ? (
               <button
                 type="button"
@@ -220,12 +214,47 @@ export default function DashboardOverviewPage() {
                 <span className="font-medium">Semua Penarikan Telah Diproses</span>
               </div>
             )}
+
+            {/* Filter Waktu: 1 hari, 3 hari, 7 hari, 14 hari, 30 hari */}
+            <div className="flex items-center gap-1 bg-zinc-950/80 p-0.5 rounded-lg border border-zinc-800/80">
+              {["1 hari", "3 hari", "7 hari", "14 hari", "30 hari"].map((period) => (
+                <button
+                  key={period}
+                  type="button"
+                  onClick={() => setTimeframe(period)}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-all cursor-pointer ${
+                    timeframe === period
+                      ? "bg-zinc-800 text-emerald-400 font-semibold shadow-xs border border-zinc-700/60"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                  }`}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Data Terpadu Satu Tampilan (Tanpa Kotak/Tabel Terpisah) */}
+        {/* Data Terpadu Satu Tampilan: Pengguna (Kiri) | Total Saldo User (Tengah) | Jumlah Penarikan Saldo User (Kanan) */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 py-2">
-          {/* Total Saldo User */}
+          {/* 1. Pengguna (Paling Kiri, Tanpa Admin) */}
+          <div className="space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-blue-400" />
+              Pengguna
+            </span>
+            <div className="text-2xl font-bold text-white font-mono tracking-tight">
+              {isLoading ? (
+                <div className="w-20 h-7 bg-zinc-800 animate-pulse rounded" />
+              ) : (
+                `${stats.totalMembers.toLocaleString("id-ID")} User`
+              )}
+            </div>
+          </div>
+
+          <div className="hidden md:block w-px h-12 bg-zinc-800" />
+
+          {/* 2. Total Saldo User */}
           <div className="space-y-1">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
               <Wallet className="w-3.5 h-3.5 text-emerald-400" />
@@ -240,14 +269,12 @@ export default function DashboardOverviewPage() {
             </div>
             <div className="text-[11px] text-zinc-400 flex items-center gap-2">
               <span>Sudah Ditarik: <b className="text-zinc-200 font-mono">Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</b></span>
-              <span>•</span>
-              <span>Rata-rata: <b className="text-emerald-300 font-mono">Rp {avgBalance.toLocaleString("id-ID")}</b></span>
             </div>
           </div>
 
           <div className="hidden md:block w-px h-12 bg-zinc-800" />
 
-          {/* Penarikan Saldo User */}
+          {/* 3. Jumlah Penarikan Saldo User */}
           <div className="space-y-1">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
               <ArrowLeftRight className="w-3.5 h-3.5 text-amber-400" />
@@ -259,13 +286,9 @@ export default function DashboardOverviewPage() {
               ) : (
                 <>
                   <span className="font-mono">{stats.pendingWithdrawals}</span>
-                  {stats.pendingWithdrawals > 0 ? (
+                  {stats.pendingWithdrawals > 0 && (
                     <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full animate-pulse">
                       Pending Approval
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-medium px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded-full">
-                      Antrean Kosong
                     </span>
                   )}
                 </>
@@ -277,73 +300,23 @@ export default function DashboardOverviewPage() {
               <span>Total Sukses: <b className="text-zinc-200 font-mono">Rp {stats.totalWithdrawn.toLocaleString("id-ID")}</b></span>
             </div>
           </div>
-
-          <div className="hidden md:block w-px h-12 bg-zinc-800" />
-
-          {/* Total Pengguna */}
-          <div className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-blue-400" />
-              Total Pengguna
-            </span>
-            <div className="text-2xl font-bold text-white font-mono tracking-tight">
-              {isLoading ? (
-                <div className="w-20 h-7 bg-zinc-800 animate-pulse rounded" />
-              ) : (
-                `${stats.totalUsers.toLocaleString("id-ID")} Akun`
-              )}
-            </div>
-            <div className="text-[11px] text-zinc-400 flex items-center gap-2">
-              <span>Member: <b className="text-zinc-200">{stats.totalMembers}</b></span>
-              <span>•</span>
-              <span>Admin: <b className="text-blue-400">{stats.totalAdmins}</b></span>
-              <span>•</span>
-              <span>Rasio: <b className="text-emerald-400">{memberPercent}% Member</b></span>
-            </div>
-          </div>
         </div>
 
-        {/* Insight Likuiditas & Baris Aksi Pintar */}
-        <div className="pt-3 border-t border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-          <div className="flex items-center gap-2 text-zinc-300">
-            <span className="flex h-2 w-2 relative shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-zinc-400 text-[11px]">
-              <b className="text-zinc-200">Kesehatan Likuiditas Kas:</b> Total perputaran dana pengguna mencapai{" "}
-              <b className="text-emerald-400 font-mono">
-                Rp {totalFlow.toLocaleString("id-ID")}
-              </b>{" "}
-              {stats.pendingWithdrawals > 0
-                ? `— Perlu memproses ${stats.pendingWithdrawals} penarikan saldo (Rp ${stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}) segera.`
-                : "— Semua penarikan tuntas dan saldo dompet beroperasi normal."}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("transactions");
-                scrollToTabs();
-              }}
-              className="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium underline cursor-pointer"
-            >
-              Buka Transaksi
-            </button>
-            <span className="text-zinc-600">•</span>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("users");
-                scrollToTabs();
-              }}
-              className="text-[11px] text-blue-400 hover:text-blue-300 font-medium underline cursor-pointer"
-            >
-              Kelola Pengguna
-            </button>
-          </div>
+        {/* Insight Likuiditas Kas */}
+        <div className="pt-3 border-t border-zinc-800 flex items-center gap-2 text-xs">
+          <span className="flex h-2 w-2 relative shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span className="text-zinc-400 text-[11px]">
+            <b className="text-zinc-200">Kesehatan Likuiditas Kas:</b> Total perputaran dana pengguna mencapai{" "}
+            <b className="text-emerald-400 font-mono">
+              Rp {totalFlow.toLocaleString("id-ID")}
+            </b>{" "}
+            {stats.pendingWithdrawals > 0
+              ? `— Perlu memproses ${stats.pendingWithdrawals} penarikan saldo (Rp ${stats.pendingWithdrawalsAmount.toLocaleString("id-ID")}) segera.`
+              : "— Semua penarikan tuntas dan saldo dompet beroperasi normal."}
+          </span>
         </div>
       </div>
 
