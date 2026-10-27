@@ -182,6 +182,7 @@ export default function DashboardOverviewPage() {
     pendingWithdrawals: 0,
     pendingWithdrawalsAmount: 0,
     totalTransactionsCount: 0,
+    gmailPrice: 4500,
   };
 
   const totalFlow = stats.totalBalance + stats.totalWithdrawn;
@@ -194,6 +195,8 @@ export default function DashboardOverviewPage() {
         isRefreshing={isRefreshing}
         timeframe={timeframe}
         onTimeframeChange={(d) => setTimeframe(d)}
+        gmailDisetor={stats.totalGmailCreated}
+        hargaGmail={stats.gmailPrice || 4500}
       />
 
       {/* 1 Kolom Terpadu: Ekosistem & Likuiditas User (3 Section) */}
@@ -261,8 +264,8 @@ export default function DashboardOverviewPage() {
           {/* Section 1: Pengguna & Aktivitas Penarikan */}
           <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col hover:border-zinc-700/80 transition-colors">
             <div className="h-[54px] flex flex-col justify-between">
-              <div className="flex items-center justify-between text-zinc-400">
-                <span className="text-[11px] font-semibold uppercase tracking-wider">Jumlah User</span>
+              <div className="flex items-center justify-between text-white">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white">Jumlah User</span>
                 <Users className="w-4 h-4 text-blue-400" />
               </div>
               <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
@@ -302,14 +305,14 @@ export default function DashboardOverviewPage() {
             </div>
           </div>
 
-          {/* Section 2: Saldo All User - Saldo Ditarik (Ukuran Font Seimbang) */}
+          {/* Section 2: Saldo All User - Saldo Ditarik (Ukuran Font Seimbang & Warna Putih) */}
           <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col hover:border-zinc-700/80 transition-colors">
             <div className="h-[54px] flex flex-col justify-between">
-              <div className="flex items-center justify-between text-zinc-400">
-                <span className="text-[11px] font-semibold uppercase tracking-wider">Saldo All User</span>
+              <div className="flex items-center justify-between text-white">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white">Saldo All User</span>
                 <Wallet className="w-4 h-4 text-emerald-400" />
               </div>
-              <div className="text-xl sm:text-2xl font-bold text-emerald-400 font-mono tracking-tight leading-none">
+              <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
                 {isLoading ? (
                   <div className="w-28 h-6 bg-zinc-800 animate-pulse rounded" />
                 ) : (
@@ -339,8 +342,8 @@ export default function DashboardOverviewPage() {
           {/* Section 3: Gmail Digenerate & Status (Ditolak / Dicek / Diterima) */}
           <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col hover:border-zinc-700/80 transition-colors">
             <div className="h-[54px] flex flex-col justify-between">
-              <div className="flex items-center justify-between text-zinc-400">
-                <span className="text-[11px] font-semibold uppercase tracking-wider">Gmail Digenerate</span>
+              <div className="flex items-center justify-between text-white">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white">Gmail Digenerate</span>
                 <Mail className="w-4 h-4 text-rose-400" />
               </div>
               <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">

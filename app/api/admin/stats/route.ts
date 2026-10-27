@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
       { data: transactions, count: txCount },
       { data: withdrawals, count: wdCount },
       { data: deposits, error: depErr },
+      { data: categories },
     ] = await Promise.all([
       supabaseAdmin
         .from("profiles")
@@ -38,6 +39,9 @@ export async function GET(req: NextRequest) {
         .from("deposits")
         .select("id, user_id, status, amount, created_at")
         .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("setor_categories")
+        .select("*"),
     ]);
 
     if (pErr) throw pErr;
@@ -190,6 +194,7 @@ export async function GET(req: NextRequest) {
         pendingWithdrawalsAmount,
         totalTransactionsCount: txCount || transactions?.length || 0,
         totalWithdrawalsCount: (withdrawals || []).length,
+        gmailPrice: categories?.find((c: any) => c.id === "good")?.price || categories?.[0]?.price || 4500,
       },
       systemHealth: {
         supabaseConnected: true,

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/line-charts-9';
-import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, XAxis, YAxis } from 'recharts';
 
@@ -122,12 +122,16 @@ export function LineChart9({
   isRefreshing,
   timeframe = '30D',
   onTimeframeChange,
+  gmailDisetor,
+  hargaGmail,
 }: {
   className?: string;
   onRefresh?: () => void;
   isRefreshing?: boolean;
   timeframe?: string;
   onTimeframeChange?: (period: string) => void;
+  gmailDisetor?: number | string;
+  hargaGmail?: number | string;
 }) {
   const [selectedMetric, setSelectedMetric] = useState<'setor' | 'pengeluaran'>('setor');
   const [internalTimeframe, setInternalTimeframe] = useState<string>('30D');
@@ -170,19 +174,6 @@ export function LineChart9({
               <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 Rp {currentTotal.toLocaleString('id-ID')}
               </span>
-              <div
-                className={`flex items-center gap-1 text-xs ${
-                  isSetor ? 'text-emerald-400' : 'text-rose-400'
-                }`}
-              >
-                {isSetor ? (
-                  <TrendingUp className="w-3.5 h-3.5" />
-                ) : (
-                  <TrendingDown className="w-3.5 h-3.5" />
-                )}
-                <span className="font-semibold">{isSetor ? '+12.7%' : '-4.2%'}</span>
-                <span className="text-zinc-500 font-normal">24 jam terakhir</span>
-              </div>
             </div>
           </div>
 
@@ -222,45 +213,24 @@ export function LineChart9({
 
         <div className="grow">
           {/* Stats Row */}
-          <div className="flex items-center justify-between flex-wrap gap-2.5 text-xs mb-3 border-y border-zinc-800/80 py-2">
-            {/* Today's Metrics */}
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between flex-wrap gap-4 text-xs mb-3 border-y border-zinc-800/80 py-2.5">
+            <div className="flex items-center gap-6">
               <div className="flex items-center gap-1.5">
-                <span className="text-zinc-400">
-                  {isSetor ? 'Setoran Hari Ini:' : 'Pengeluaran Hari Ini:'}
+                <span className="text-zinc-400">Gmail Disetor :</span>
+                <span className="font-semibold text-white font-mono">
+                  {gmailDisetor !== undefined
+                    ? (typeof gmailDisetor === 'number' ? `${gmailDisetor.toLocaleString('id-ID')} Akun` : gmailDisetor)
+                    : '2 Akun'}
                 </span>
-                <span className="font-semibold text-zinc-100">
-                  Rp {todayAmount.toLocaleString('id-ID')}
-                </span>
-                <div
-                  className={`flex items-center gap-0.5 font-medium ${
-                    isSetor ? 'text-emerald-400' : 'text-rose-400'
-                  }`}
-                >
-                  {isSetor ? (
-                    <TrendingUp className="w-3 h-3" />
-                  ) : (
-                    <TrendingDown className="w-3 h-3" />
-                  )}
-                  <span>({isSetor ? '+8%' : '-4.2%'})</span>
-                </div>
               </div>
-            </div>
-
-            {/* High / Low */}
-            <div className="flex items-center gap-4 text-zinc-400 text-[11px]">
-              <span>
-                Tertinggi:{' '}
-                <span className="text-sky-400 font-medium">
-                  Rp {(highVal * 1000).toLocaleString('id-ID')}
+              <div className="flex items-center gap-1.5">
+                <span className="text-zinc-400">Harga Gmail :</span>
+                <span className="font-semibold text-emerald-400 font-mono">
+                  {hargaGmail !== undefined
+                    ? (typeof hargaGmail === 'number' ? `Rp ${hargaGmail.toLocaleString('id-ID')}` : hargaGmail)
+                    : 'Rp 4.500'}
                 </span>
-              </span>
-              <span>
-                Terendah:{' '}
-                <span className="text-amber-400 font-medium">
-                  Rp {(lowVal * 1000).toLocaleString('id-ID')}
-                </span>
-              </span>
+              </div>
             </div>
           </div>
 
