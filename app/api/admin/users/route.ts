@@ -17,11 +17,12 @@ export async function GET(req: NextRequest) {
       query = query.eq("role", roleFilter);
     }
 
-    // Parallel fetch: profiles, wallets, saved_ewallets, authUsers
+    // Parallel fetch: profiles, wallets, saved_ewallets, deposits, authUsers
     const [
       { data: profiles, error: pErr },
       { data: wallets },
       { data: ewallets },
+      { data: deposits },
       authUsersRes,
     ] = await Promise.all([
       query,
@@ -31,6 +32,9 @@ export async function GET(req: NextRequest) {
       supabaseAdmin
         .from("saved_ewallets")
         .select("id, user_id, method, account_number, account_name, is_default"),
+      supabaseAdmin
+        .from("deposits")
+        .select("user_id, status"),
       supabaseAdmin.auth.admin
         .listUsers({ perPage: 1000 })
         .catch((e) => {
@@ -74,7 +78,28 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // 6. Merge profiles, wallets, ewallets, avatars, and referral data
+    // 5b. Build deposits count map per user (total, diterima, dicek, ditolak)
+    const depositStatsMap: Record<
+      string,
+      { total: number; diterima: number; dicek: number; ditolak: number }
+    > = {};
+    (deposits || []).forEach((d: any) => {
+      if (!d.user_id) return;
+      if (!depositStatsMap[d.user_id]) {
+        depositStatsMap[d.user_id] = { total: 0, diterima: 0, dicek: 0, ditolak: 0 };
+      }
+      const s = (d.status || "").toLowerCase();
+      depositStatsMap[d.user_id].total++;
+      if (["accepted", "diterima", "sukses", "approved"].includes(s)) {
+        depositStatsMap[d.user_id].diterima++;
+      } else if (["pending", "dicek", "proses", "menunggu"].includes(s)) {
+        depositStatsMap[d.user_id].dicek++;
+      } else if (["rejected", "ditolak", "batal"].includes(s)) {
+        depositStatsMap[d.user_id].ditolak++;
+      }
+    });
+
+    // 6. Merge profiles, wallets, ewallets, avatars, referral data, and deposits
     let users = (profiles || []).map((p) => {
       const w = walletMap[p.id];
       const authUser = authUserMap[p.id];
@@ -103,6 +128,13 @@ export async function GET(req: NextRequest) {
       const referredByCode = p.referred_by_code || null;
       const referrer = referredByCode ? refCodeToUserMap[referredByCode] || null : null;
 
+      const userDeposits = depositStatsMap[p.id] || {
+        total: 0,
+        diterima: 0,
+        dicek: 0,
+        ditolak: 0,
+      };
+
       return {
         id: p.id,
         name: p.name || p.email?.split("@")[0] || "Pengguna",
@@ -122,6 +154,7 @@ export async function GET(req: NextRequest) {
         total_earned: Number(w?.total_earned || 0),
         wallet_id: w?.id || null,
         is_blocked: !!bannedMap[p.id],
+        deposits_count: userDeposits,
       };
     });
 

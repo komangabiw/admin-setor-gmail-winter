@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Textarea } from "@/components/ui/input";
 
-type SortField = "created_at" | "balance";
+type SortField = "created_at" | "balance" | "gmail";
 type SortOrder = "asc" | "desc";
 
 function getEwalletBadgeStyle(method: string) {
@@ -252,6 +252,11 @@ export const UsersTab = React.memo(function UsersTab({
         const timeB = new Date(b.created_at).getTime();
         return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
       }
+      if (sortField === "gmail" && sortOrder) {
+        const gmA = Number(a.deposits_count?.total || 0);
+        const gmB = Number(b.deposits_count?.total || 0);
+        return sortOrder === "asc" ? gmA - gmB : gmB - gmA;
+      }
 
       // 3. Normal / default (terbaru ke terlama)
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -309,19 +314,41 @@ export const UsersTab = React.memo(function UsersTab({
         </div>
       </div>
 
-      {/* Table Sederhana Pengguna (Pengguna, Role, UID, Saldo, Bergabung) */}
+      {/* Table Sederhana Pengguna (Pengguna, Role, UID, Gmail Disetor, Saldo, Bergabung) */}
       <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-left border-separate border-spacing-0 text-xs">
             <thead>
-              <tr className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
-                <th className="py-3.5 px-4">Pengguna</th>
-                <th className="py-3.5 px-4">UID</th>
-                <th className="py-3.5 px-4">Role</th>
+              <tr className="bg-zinc-950 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
+                <th className="py-3.5 px-4 border-b border-zinc-800 whitespace-nowrap">Pengguna</th>
+                <th className="py-3.5 px-4 border-b border-zinc-800 whitespace-nowrap">Role</th>
+                <th className="py-3.5 px-4 border-b border-zinc-800 whitespace-nowrap">UID</th>
+                <th
+                  onClick={() => handleToggleSort("gmail")}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="py-3.5 px-4 border-b border-zinc-800 cursor-pointer hover:text-zinc-200 transition-colors select-none outline-none focus:outline-none whitespace-nowrap group"
+                  title="Klik untuk mengurutkan jumlah setoran Gmail (atas / bawah / normal)"
+                  style={{ WebkitTapHighlightColor: "transparent" }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Gmail Disetor</span>
+                    {sortField === "gmail" ? (
+                      sortOrder === "asc" ? (
+                        <ArrowUp className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5 text-emerald-400" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+                    )}
+                  </div>
+                </th>
                 <th
                   onClick={() => handleToggleSort("balance")}
-                  className="py-3.5 px-4 cursor-pointer hover:text-zinc-200 transition-colors select-none group"
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="py-3.5 px-4 border-b border-zinc-800 cursor-pointer hover:text-zinc-200 transition-colors select-none outline-none focus:outline-none whitespace-nowrap group"
                   title="Klik untuk mengurutkan saldo (atas / bawah / normal)"
+                  style={{ WebkitTapHighlightColor: "transparent" }}
                 >
                   <div className="flex items-center gap-1.5">
                     <span>Saldo</span>
@@ -338,8 +365,10 @@ export const UsersTab = React.memo(function UsersTab({
                 </th>
                 <th
                   onClick={() => handleToggleSort("created_at")}
-                  className="py-3.5 px-4 cursor-pointer hover:text-zinc-200 transition-colors select-none group"
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="py-3.5 px-4 border-b border-zinc-800 cursor-pointer hover:text-zinc-200 transition-colors select-none outline-none focus:outline-none whitespace-nowrap group"
                   title="Klik untuk mengurutkan tanggal bergabung (atas / bawah / normal)"
+                  style={{ WebkitTapHighlightColor: "transparent" }}
                 >
                   <div className="flex items-center gap-1.5">
                     <span>Bergabung</span>
@@ -356,10 +385,10 @@ export const UsersTab = React.memo(function UsersTab({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/70 text-zinc-200">
+            <tbody className="text-zinc-200">
               {isLoading && users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-zinc-500">
+                  <td colSpan={6} className="py-12 text-center text-zinc-500 border-b border-zinc-800/70">
                     <div className="flex flex-col items-center gap-2">
                       <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" />
                       <span>Memuat data pengguna dari database...</span>
@@ -368,7 +397,7 @@ export const UsersTab = React.memo(function UsersTab({
                 </tr>
               ) : sortedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-zinc-500">
+                  <td colSpan={6} className="py-12 text-center text-zinc-500 border-b border-zinc-800/70">
                     Tidak ditemukan data pengguna yang cocok.
                   </td>
                 </tr>
@@ -384,7 +413,7 @@ export const UsersTab = React.memo(function UsersTab({
                     title="Klik untuk melihat detail lengkap pengguna"
                   >
                     {/* 1. Pengguna */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 border-b border-zinc-800/70">
                       <div className="flex items-center gap-3">
                         {u.avatar_url ? (
                           <img
@@ -417,8 +446,17 @@ export const UsersTab = React.memo(function UsersTab({
                       </div>
                     </td>
 
-                    {/* 2. UID (Full, disebelah kiri role) */}
-                    <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    {/* 2. Role (sekarang sebelum UID) */}
+                    <td className="py-3.5 px-4 border-b border-zinc-800/70 whitespace-nowrap">
+                      {u.role === "Admin" ? (
+                        <Badge variant="primary" className="text-[10px]">Admin</Badge>
+                      ) : (
+                        <Badge variant="neutral" className="text-[10px]">User</Badge>
+                      )}
+                    </td>
+
+                    {/* 3. UID (sekarang setelah Role) */}
+                    <td className="py-3.5 px-4 border-b border-zinc-800/70 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1.5">
                         <span
                           className="font-mono text-[11px] text-zinc-300 bg-zinc-900/90 px-2 py-0.5 rounded border border-zinc-800 select-all"
@@ -449,17 +487,45 @@ export const UsersTab = React.memo(function UsersTab({
                       </div>
                     </td>
 
-                    {/* 3. Role */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      {u.role === "Admin" ? (
-                        <Badge variant="primary" className="text-[10px]">Admin</Badge>
-                      ) : (
-                        <Badge variant="neutral" className="text-[10px]">User</Badge>
-                      )}
+                    {/* 4. Gmail Disetor (diterima, dicek, ditolak) */}
+                    <td className="py-3.5 px-4 border-b border-zinc-800/70 whitespace-nowrap">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-zinc-100 text-xs">
+                            {u.deposits_count?.total || 0}
+                          </span>
+                          <span className="text-[10px] text-zinc-400">Akun</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium">
+                          <span
+                            className="inline-flex items-center gap-1 text-emerald-400 font-mono"
+                            title="Diterima"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block shrink-0"></span>
+                            {u.deposits_count?.diterima || 0} diterima
+                          </span>
+                          <span className="text-zinc-600">•</span>
+                          <span
+                            className="inline-flex items-center gap-1 text-amber-400 font-mono"
+                            title="Dicek"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0"></span>
+                            {u.deposits_count?.dicek || 0} dicek
+                          </span>
+                          <span className="text-zinc-600">•</span>
+                          <span
+                            className="inline-flex items-center gap-1 text-rose-400 font-mono"
+                            title="Ditolak"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block shrink-0"></span>
+                            {u.deposits_count?.ditolak || 0} ditolak
+                          </span>
+                        </div>
+                      </div>
                     </td>
 
-                    {/* 4. Saldo */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
+                    {/* 5. Saldo */}
+                    <td className="py-3.5 px-4 border-b border-zinc-800/70 whitespace-nowrap">
                       <div className="font-mono">
                         <span className="font-bold text-emerald-400 text-xs sm:text-sm">
                           Rp {Number(u.balance || 0).toLocaleString("id-ID")}
@@ -470,8 +536,8 @@ export const UsersTab = React.memo(function UsersTab({
                       </div>
                     </td>
 
-                    {/* 5. Bergabung */}
-                    <td className="py-3.5 px-4 text-zinc-400 whitespace-nowrap text-[11px]">
+                    {/* 6. Bergabung */}
+                    <td className="py-3.5 px-4 border-b border-zinc-800/70 text-zinc-400 whitespace-nowrap text-[11px]">
                       {new Date(u.created_at).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "short",
@@ -574,6 +640,38 @@ export const UsersTab = React.memo(function UsersTab({
                 <p className="text-lg font-bold font-mono text-zinc-200 mt-0.5">
                   Rp {Number(detailUser.total_withdrawn || 0).toLocaleString("id-ID")}
                 </p>
+              </div>
+            </div>
+
+            {/* Aktivitas Setor Gmail */}
+            <div className="p-3.5 bg-zinc-950/60 rounded-xl border border-zinc-800/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  Setoran Gmail Pengguna
+                </span>
+                <span className="font-mono font-bold text-xs text-zinc-200">
+                  Total: {detailUser.deposits_count?.total || 0} Akun
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="text-[10px] text-emerald-400 block font-medium">Diterima</span>
+                  <span className="text-sm font-bold font-mono text-emerald-400">
+                    {detailUser.deposits_count?.diterima || 0}
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <span className="text-[10px] text-amber-400 block font-medium">Dicek</span>
+                  <span className="text-sm font-bold font-mono text-amber-400">
+                    {detailUser.deposits_count?.dicek || 0}
+                  </span>
+                </div>
+                <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                  <span className="text-[10px] text-rose-400 block font-medium">Ditolak</span>
+                  <span className="text-sm font-bold font-mono text-rose-400">
+                    {detailUser.deposits_count?.ditolak || 0}
+                  </span>
+                </div>
               </div>
             </div>
 
