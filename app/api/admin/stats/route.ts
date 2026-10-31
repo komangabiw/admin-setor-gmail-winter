@@ -9,7 +9,29 @@ export async function GET(req: NextRequest) {
 
   const startTime = Date.now();
   try {
-    // Parallel fetch: profiles, wallets, tickets, transactions, withdrawals
+    const searchParams = req.nextUrl.searchParams;
+    const timeframe = (searchParams.get("timeframe") || "7D").toUpperCase();
+
+    // Hitung tanggal batas (cutoff) berdasarkan filter hari
+    let cutoffDate: Date | null = null;
+    const now = new Date();
+    if (timeframe === "1D") {
+      cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    } else if (timeframe === "3D") {
+      cutoffDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    } else if (timeframe === "7D") {
+      cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (timeframe === "14D") {
+      cutoffDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    } else if (timeframe === "30D") {
+      cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    } else if (timeframe === "ALL") {
+      cutoffDate = null;
+    } else {
+      cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+
+    // Parallel fetch: profiles, wallets, tickets, transactions, withdrawals, deposits
     const [
       { data: profiles, error: pErr },
       { data: wallets, error: wErr },
@@ -34,14 +56,14 @@ export async function GET(req: NextRequest) {
         .from("transactions")
         .select("id, user_id, type, amount, title, description, status, created_at", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(10),
+        .limit(200),
       supabaseAdmin
         .from("withdrawals")
         .select("id, user_id, amount, method, status, created_at, account_name, account_number")
         .order("created_at", { ascending: false }),
       supabaseAdmin
         .from("deposits")
-        .select("id, user_id, status, amount, created_at")
+        .select("id, user_id, gmail, normalized_gmail, category_id, status, amount, note, checked_at, created_at")
         .order("created_at", { ascending: false }),
       supabaseAdmin
         .from("setor_categories")
@@ -59,7 +81,7 @@ export async function GET(req: NextRequest) {
 
     const walletMap: Record<string, { balance: number; total_withdrawn: number; total_earned: number }> = {};
     let totalBalance = 0;
-    let totalWithdrawn = 0;
+    let totalWithdrawnFromWallets = 0;
     let totalEarned = 0;
     let usersWithBalance = 0;
     let usersWithdrawnFromWallets = 0;
@@ -70,39 +92,89 @@ export async function GET(req: NextRequest) {
       const te = Number(w.total_earned) || 0;
       walletMap[w.user_id] = { balance: b, total_withdrawn: tw, total_earned: te };
       totalBalance += b;
-      totalWithdrawn += tw;
+      totalWithdrawnFromWallets += tw;
       totalEarned += te;
       if (b > 0) usersWithBalance++;
       if (tw > 0) usersWithdrawnFromWallets++;
     });
 
-    // Withdrawal metrics
-    const successWithdrawals = (withdrawals || []).filter(
+    // Build user map for fast name/email resolution
+    const userMap: Record<string, { name: string; email: string; dana: string; avatar_url?: string }> = {};
+    (profiles || []).forEach((p) => {
+      userMap[p.id] = {
+        name: p.name || p.email?.split("@")[0] || "User",
+        email: p.email || "-",
+        dana: p.dana_number || "-",
+        avatar_url: p.avatar_url,
+      };
+    });
+
+    // Filter raw data sesuai timeframe yang dipilih (1D, 3D, 7D, 14D, 30D, All)
+    const allDepositsRaw = deposits || [];
+    const allWithdrawalsRaw = withdrawals || [];
+    const allTransactionsRaw = transactions || [];
+
+    const filteredDeposits = cutoffDate
+      ? allDepositsRaw.filter((d) => new Date(d.created_at) >= cutoffDate)
+      : allDepositsRaw;
+
+    const filteredWithdrawals = cutoffDate
+      ? allWithdrawalsRaw.filter((w) => new Date(w.created_at) >= cutoffDate)
+      : allWithdrawalsRaw;
+
+    const filteredTransactions = cutoffDate
+      ? allTransactionsRaw.filter((t) => new Date(t.created_at) >= cutoffDate)
+      : allTransactionsRaw;
+
+    // Withdrawal metrics sesuai timeframe
+    const successWithdrawals = filteredWithdrawals.filter(
       (w) => (w.status || "").toLowerCase() === "success"
     );
+    let totalWithdrawnInPeriod = 0;
+    successWithdrawals.forEach((w) => {
+      totalWithdrawnInPeriod += Number(w.amount) || 0;
+    });
     const successWithdrawalUsers = new Set(successWithdrawals.map((w) => w.user_id));
-    const usersWithdrawnCount = Math.max(usersWithdrawnFromWallets, successWithdrawalUsers.size);
     const totalWithdrawalTransactions = successWithdrawals.length;
 
-    // Deposits (Gmail dibuat) metrics
-    const allDeposits = deposits || [];
-    const totalGmailCreated = allDeposits.length;
-    const gmailDiterima = allDeposits.filter((d) =>
+    const totalWithdrawn = !cutoffDate
+      ? Math.max(totalWithdrawnInPeriod, totalWithdrawnFromWallets)
+      : totalWithdrawnInPeriod;
+
+    const usersWithdrawnCount = !cutoffDate
+      ? Math.max(successWithdrawalUsers.size, usersWithdrawnFromWallets)
+      : successWithdrawalUsers.size;
+
+    // Deposits (Gmail disetor) metrics sesuai timeframe
+    const totalGmailCreated = filteredDeposits.length;
+    const gmailDiterima = filteredDeposits.filter((d) =>
       ["diterima", "accepted", "sukses", "approved"].includes((d.status || "").toLowerCase())
     ).length;
-    const gmailDicek = allDeposits.filter((d) =>
+    const gmailDicek = filteredDeposits.filter((d) =>
       ["pending", "dicek", "proses", "menunggu"].includes((d.status || "").toLowerCase())
     ).length;
-    const gmailDitolak = allDeposits.filter((d) =>
+    const gmailDitolak = filteredDeposits.filter((d) =>
       ["ditolak", "rejected", "batal"].includes((d.status || "").toLowerCase())
     ).length;
 
-    const acceptedDeposits = allDeposits.filter((d) =>
+    const acceptedDeposits = filteredDeposits.filter((d) =>
       ["diterima", "accepted", "sukses", "approved"].includes((d.status || "").toLowerCase())
     );
     const usersWithGmailSuccess = new Set(
-      (acceptedDeposits.length > 0 ? acceptedDeposits : allDeposits).map((d) => d.user_id)
+      (acceptedDeposits.length > 0 ? acceptedDeposits : filteredDeposits).map((d) => d.user_id)
     ).size;
+
+    // Hitung Jumlah User Aktif (User yang melakukan setor, transaksi, withdraw, atau baru mendaftar di periode terpilih)
+    const activeUserIds = new Set<string>();
+    filteredDeposits.forEach((d) => { if (d.user_id) activeUserIds.add(d.user_id); });
+    filteredWithdrawals.forEach((w) => { if (w.user_id) activeUserIds.add(w.user_id); });
+    filteredTransactions.forEach((t) => { if (t.user_id) activeUserIds.add(t.user_id); });
+    (profiles || []).forEach((p) => {
+      if (!cutoffDate || new Date(p.created_at) >= cutoffDate) {
+        activeUserIds.add(p.id);
+      }
+    });
+    const activeUsersCount = activeUserIds.size > 0 ? activeUserIds.size : usersWithBalance;
 
     const totalTickets = tickets?.length || 0;
     let activeTickets = 0;
@@ -126,16 +198,6 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // Build user map for fast name/email resolution
-    const userMap: Record<string, { name: string; email: string; dana: string }> = {};
-    (profiles || []).forEach((p) => {
-      userMap[p.id] = {
-        name: p.name || p.email?.split("@")[0] || "User",
-        email: p.email || "-",
-        dana: p.dana_number || "-",
-      };
-    });
-
     // Recent tickets with populated user info
     const recentTicketsWithUser = (tickets || []).slice(0, 5).map((t) => ({
       ...t,
@@ -143,11 +205,26 @@ export async function GET(req: NextRequest) {
       userEmail: userMap[t.user_id]?.email || "-",
     }));
 
-    // Recent transactions with populated user info
-    const recentTransactionsWithUser = (transactions || []).slice(0, 6).map((t) => ({
+    // Recent transactions with populated user info (filtered by timeframe)
+    const recentTransactionsWithUser = filteredTransactions.slice(0, 20).map((t) => ({
       ...t,
       userName: userMap[t.user_id]?.name || "Pengguna",
       userEmail: userMap[t.user_id]?.email || "-",
+    }));
+
+    // Recent deposits with populated user info (filtered by timeframe) for Setor Gmail list
+    const recentDepositsWithUser = filteredDeposits.slice(0, 50).map((d) => ({
+      id: d.id,
+      user_id: d.user_id,
+      userName: userMap[d.user_id]?.name || "Pengguna",
+      userEmail: userMap[d.user_id]?.email || "-",
+      gmail: d.gmail || d.normalized_gmail || "-",
+      status: d.status || "pending",
+      category_id: d.category_id || "good",
+      categoryLabel: d.category_id === "good" ? "Gmail Good" : "Gmail Bebas",
+      amount: Number(d.amount) || (d.category_id === "good" ? 4500 : 2500),
+      note: d.note || "-",
+      created_at: d.created_at,
     }));
 
     // Recent withdrawals needing review
@@ -176,10 +253,12 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      timeframe,
       stats: {
         totalUsers,
         totalAdmins,
         totalMembers,
+        activeUsersCount,
         totalBalance,
         usersWithBalance,
         totalWithdrawn,
@@ -196,8 +275,8 @@ export async function GET(req: NextRequest) {
         resolvedTickets,
         pendingWithdrawals,
         pendingWithdrawalsAmount,
-        totalTransactionsCount: txCount || transactions?.length || 0,
-        totalWithdrawalsCount: (withdrawals || []).length,
+        totalTransactionsCount: filteredTransactions.length,
+        totalWithdrawalsCount: filteredWithdrawals.length,
         gmailPrice: categories?.find((c: any) => c.id === "good")?.price || categories?.[0]?.price || 4500,
       },
       systemHealth: {
@@ -210,6 +289,7 @@ export async function GET(req: NextRequest) {
       recentUsers: recentUsersWithWallet,
       recentTickets: recentTicketsWithUser,
       recentTransactions: recentTransactionsWithUser,
+      recentDeposits: recentDepositsWithUser,
       pendingWithdrawalsList,
     });
   } catch (err: any) {

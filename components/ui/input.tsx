@@ -37,7 +37,7 @@ export function Input({
         )}
         <input
           id={inputId}
-          className={`w-full bg-zinc-950/70 border border-zinc-800 rounded-lg px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all ${
+          className={`w-full bg-zinc-950/70 border border-zinc-800 rounded-lg px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
             leftIcon ? "pl-9" : ""
           } ${error ? "border-rose-500 focus:ring-rose-500/50" : ""} ${className}`}
           {...props}

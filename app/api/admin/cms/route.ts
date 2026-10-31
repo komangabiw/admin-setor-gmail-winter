@@ -80,38 +80,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Sanitize values
+    // Sanitize values (Max 6 digit for numbers = 999,999; Max 300 characters for strings)
     const sanitizedIncoming: Partial<SiteConfig> = {
-      price_per_gmail: sanitizeNumber(config.price_per_gmail, 100, 1_000_000, DEFAULT_CONFIG.price_per_gmail),
-      price_bebas: sanitizeNumber(config.price_bebas, 100, 1_000_000, DEFAULT_CONFIG.price_bebas),
-      min_withdrawal: sanitizeNumber(config.min_withdrawal, 1000, 10_000_000, DEFAULT_CONFIG.min_withdrawal),
-      tax_gopay: sanitizeNumber(config.tax_gopay, 0, 50_000, DEFAULT_CONFIG.tax_gopay),
-      tax_ovo: sanitizeNumber(config.tax_ovo, 0, 50_000, DEFAULT_CONFIG.tax_ovo),
-      tax_dana: sanitizeNumber(config.tax_dana, 0, 50_000, DEFAULT_CONFIG.tax_dana),
-      tax_shopeepay: sanitizeNumber(config.tax_shopeepay, 0, 50_000, DEFAULT_CONFIG.tax_shopeepay),
-      default_password: sanitizeString(config.default_password, 50) || DEFAULT_CONFIG.default_password,
-      rule_status: sanitizeString(config.rule_status, 100) || DEFAULT_CONFIG.rule_status,
-      rule_nama: sanitizeString(config.rule_nama, 100) || DEFAULT_CONFIG.rule_nama,
-      rule_usia: sanitizeString(config.rule_usia, 100) || DEFAULT_CONFIG.rule_usia,
-      rule_keamanan: sanitizeString(config.rule_keamanan, 100) || DEFAULT_CONFIG.rule_keamanan,
+      price_per_gmail: sanitizeNumber(config.price_per_gmail, 0, 999_999, DEFAULT_CONFIG.price_per_gmail),
+      price_bebas: sanitizeNumber(config.price_bebas, 0, 999_999, DEFAULT_CONFIG.price_bebas),
+      min_withdrawal: sanitizeNumber(config.min_withdrawal, 0, 999_999, DEFAULT_CONFIG.min_withdrawal),
+      tax_gopay: sanitizeNumber(config.tax_gopay, 0, 999_999, DEFAULT_CONFIG.tax_gopay),
+      tax_ovo: sanitizeNumber(config.tax_ovo, 0, 999_999, DEFAULT_CONFIG.tax_ovo),
+      tax_dana: sanitizeNumber(config.tax_dana, 0, 999_999, DEFAULT_CONFIG.tax_dana),
+      tax_shopeepay: sanitizeNumber(config.tax_shopeepay, 0, 999_999, DEFAULT_CONFIG.tax_shopeepay),
+      default_password: sanitizeString(config.default_password, 300) || DEFAULT_CONFIG.default_password,
+      rule_status: sanitizeString(config.rule_status, 300) || DEFAULT_CONFIG.rule_status,
+      rule_nama: sanitizeString(config.rule_nama, 300) || DEFAULT_CONFIG.rule_nama,
+      rule_usia: sanitizeString(config.rule_usia, 300) || DEFAULT_CONFIG.rule_usia,
+      rule_keamanan: sanitizeString(config.rule_keamanan, 300) || DEFAULT_CONFIG.rule_keamanan,
       rules_detail_text: Array.isArray(config.rules_detail_text)
-        ? config.rules_detail_text.map((t: any) => sanitizeString(t, 250))
+        ? config.rules_detail_text.map((t: any) => sanitizeString(t, 300))
         : DEFAULT_CONFIG.rules_detail_text,
-      hero_headline_1: sanitizeString(config.hero_headline_1, 100) || DEFAULT_CONFIG.hero_headline_1,
-      hero_headline_2: sanitizeString(config.hero_headline_2, 100) || DEFAULT_CONFIG.hero_headline_2,
-      hero_headline_3: sanitizeString(config.hero_headline_3, 100) || DEFAULT_CONFIG.hero_headline_3,
+      hero_headline_1: sanitizeString(config.hero_headline_1, 300) || DEFAULT_CONFIG.hero_headline_1,
+      hero_headline_2: sanitizeString(config.hero_headline_2, 300) || DEFAULT_CONFIG.hero_headline_2,
+      hero_headline_3: sanitizeString(config.hero_headline_3, 300) || DEFAULT_CONFIG.hero_headline_3,
       hero_subheadline: sanitizeString(config.hero_subheadline, 300) || DEFAULT_CONFIG.hero_subheadline,
-      platform_badge: sanitizeString(config.platform_badge, 100) || DEFAULT_CONFIG.platform_badge,
-      badge_status_text: sanitizeString(config.badge_status_text, 150) || DEFAULT_CONFIG.badge_status_text,
+      platform_badge: sanitizeString(config.platform_badge, 300) || DEFAULT_CONFIG.platform_badge,
+      badge_status_text: sanitizeString(config.badge_status_text, 300) || DEFAULT_CONFIG.badge_status_text,
       badge_status_active: Boolean(config.badge_status_active),
-      marquee_text: sanitizeString(config.marquee_text, 500) || DEFAULT_CONFIG.marquee_text,
+      marquee_text: sanitizeString(config.marquee_text, 300) || DEFAULT_CONFIG.marquee_text,
       whatsapp_channel_url: sanitizeString(config.whatsapp_channel_url, 300) || DEFAULT_CONFIG.whatsapp_channel_url,
-      telegram_admin_username: sanitizeString(config.telegram_admin_username, 60).replace("@", "") || DEFAULT_CONFIG.telegram_admin_username,
+      telegram_admin_username: sanitizeString(config.telegram_admin_username, 300).replace("@", "") || DEFAULT_CONFIG.telegram_admin_username,
       is_setor_active: Boolean(config.is_setor_active),
       is_checker_active: Boolean(config.is_checker_active),
       is_withdrawal_active: Boolean(config.is_withdrawal_active),
       is_maintenance_mode: Boolean(config.is_maintenance_mode),
-      maintenance_message: sanitizeString(config.maintenance_message, 500) || DEFAULT_CONFIG.maintenance_message,
+      maintenance_message: sanitizeString(config.maintenance_message, 300) || DEFAULT_CONFIG.maintenance_message,
     };
 
     // Merge incoming config with default to ensure complete structure

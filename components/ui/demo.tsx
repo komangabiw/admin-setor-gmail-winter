@@ -27,7 +27,12 @@ function generateRealtimeChartData(timeframe: string, isSetor: boolean = true) {
     });
   }
 
-  const numDays = timeframe === '3D' ? 3 : timeframe === '7D' ? 7 : timeframe === '14D' ? 14 : 30;
+  let numDays = 7;
+  if (timeframe === '3D') numDays = 3;
+  else if (timeframe === '7D') numDays = 7;
+  else if (timeframe === '14D') numDays = 14;
+  else if (timeframe === '30D') numDays = 30;
+  else if (timeframe === 'All' || timeframe === 'ALL') numDays = 60;
   const result = [];
 
   // Wave organik yang mulus untuk visualisasi grafik
@@ -135,7 +140,23 @@ export function LineChart9({
     return generateRealtimeChartData(activeTimeframe, isSetor);
   }, [activeTimeframe, isSetor]);
 
-  const currentTotal = isSetor ? 24847830 : 6420000;
+  const currentTotal = React.useMemo(() => {
+    if (isSetor) {
+      if (activeTimeframe === '1D') return 3550000;
+      if (activeTimeframe === '3D') return 10650000;
+      if (activeTimeframe === '7D') return 24847830;
+      if (activeTimeframe === '14D') return 49695000;
+      if (activeTimeframe === '30D') return 106490000;
+      return 248470000; // All
+    } else {
+      if (activeTimeframe === '1D') return 910000;
+      if (activeTimeframe === '3D') return 2750000;
+      if (activeTimeframe === '7D') return 6420000;
+      if (activeTimeframe === '14D') return 12840000;
+      if (activeTimeframe === '30D') return 27500000;
+      return 64200000; // All
+    }
+  }, [activeTimeframe, isSetor]);
   const highVal = Math.max(...activeData.map((d) => d.value));
   const lowVal = Math.min(...activeData.map((d) => d.value));
 
@@ -186,9 +207,9 @@ export function LineChart9({
               </button>
             )}
 
-            {/* Timeframe Selector with 1D, 3D, 7D, 14D, 30D (with locked borders to avoid layout shift) */}
+            {/* Timeframe Selector with 1D, 3D, 7D, 14D, 30D, All */}
             <div className="flex items-center gap-1 bg-zinc-950/80 p-0.5 rounded-lg border border-zinc-800">
-              {['1D', '3D', '7D', '14D', '30D'].map((d) => (
+              {['1D', '3D', '7D', '14D', '30D', 'All'].map((d) => (
                 <button
                   key={d}
                   type="button"

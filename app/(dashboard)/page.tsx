@@ -34,7 +34,7 @@ export default function DashboardOverviewPage() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"transactions" | "users">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "deposits" | "transactions">("users");
   const [timeframe, setTimeframe] = useState<string>("7D");
   const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -53,6 +53,11 @@ export default function DashboardOverviewPage() {
     });
   };
 
+  // State untuk Tab List Setor Gmail
+  const [depositSearch, setDepositSearch] = useState("");
+  const [depositStatusFilter, setDepositStatusFilter] = useState<"all" | "accepted" | "pending" | "rejected">("all");
+  const [copiedGmail, setCopiedGmail] = useState<string | null>(null);
+
   // Quick Balance Modal
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
   const [targetUserId, setTargetUserId] = useState("");
@@ -65,12 +70,12 @@ export default function DashboardOverviewPage() {
   const [isProcessingWd, setIsProcessingWd] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const fetchStats = async (showLoading = true) => {
+  const fetchStats = async (showLoading = true, tf = timeframe) => {
     if (showLoading) setIsLoading(true);
     else setIsRefreshing(true);
 
     try {
-      const res = await adminFetch("/api/admin/stats");
+      const res = await adminFetch(`/api/admin/stats?timeframe=${tf}`);
       const json = await res.json();
       if (json.success) {
         setData(json);
@@ -83,19 +88,24 @@ export default function DashboardOverviewPage() {
     }
   };
 
+  const handleTimeframeChange = (newTf: string) => {
+    setTimeframe(newTf);
+    fetchStats(false, newTf);
+  };
+
   const handleFullRefresh = async () => {
-    await fetchStats(false);
+    await fetchStats(false, timeframe);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("admin_refresh_all"));
     }
   };
 
   const handleUserUpdated = useCallback(() => {
-    fetchStats(false);
-  }, []);
+    fetchStats(false, timeframe);
+  }, [timeframe]);
 
   useEffect(() => {
-    fetchStats();
+    fetchStats(true, "7D");
   }, []);
 
   const scrollToTabs = () => {
@@ -185,10 +195,19 @@ export default function DashboardOverviewPage() {
     }
   };
 
+  const copyGmail = (gmail: string, id: string) => {
+    if (navigator?.clipboard) {
+      navigator.clipboard.writeText(gmail);
+      setCopiedGmail(id);
+      setTimeout(() => setCopiedGmail(null), 1500);
+    }
+  };
+
   const stats = data?.stats || {
     totalUsers: 0,
     totalAdmins: 0,
     totalMembers: 0,
+    activeUsersCount: 0,
     totalBalance: 0,
     usersWithBalance: 0,
     totalWithdrawn: 0,
@@ -206,16 +225,45 @@ export default function DashboardOverviewPage() {
     gmailPrice: 4500,
   };
 
+  const filteredDepositsList = React.useMemo(() => {
+    let list = data?.recentDeposits || [];
+    if (depositStatusFilter !== "all") {
+      list = list.filter((d: any) => {
+        const s = (d.status || "").toLowerCase();
+        if (depositStatusFilter === "accepted") {
+          return ["accepted", "diterima", "sukses", "approved"].includes(s);
+        }
+        if (depositStatusFilter === "pending") {
+          return ["pending", "dicek", "proses", "menunggu"].includes(s);
+        }
+        if (depositStatusFilter === "rejected") {
+          return ["rejected", "ditolak", "batal"].includes(s);
+        }
+        return true;
+      });
+    }
+    if (depositSearch.trim()) {
+      const q = depositSearch.toLowerCase();
+      list = list.filter(
+        (d: any) =>
+          (d.gmail || "").toLowerCase().includes(q) ||
+          (d.userName || "").toLowerCase().includes(q) ||
+          (d.userEmail || "").toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [data?.recentDeposits, depositStatusFilter, depositSearch]);
+
   const totalFlow = stats.totalBalance + stats.totalWithdrawn;
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto pb-10">
-      {/* Revenue & Balance Flow Line Chart with Refresh Button & Timeframe (1D, 3D, 7D, 14D, 30D) */}
+      {/* Revenue & Balance Flow Line Chart with Refresh Button & Timeframe (1D, 3D, 7D, 14D, 30D, All) */}
       <LineChart9
         onRefresh={handleFullRefresh}
         isRefreshing={isRefreshing}
         timeframe={timeframe}
-        onTimeframeChange={(d) => setTimeframe(d)}
+        onTimeframeChange={handleTimeframeChange}
         gmailDisetor={stats.totalGmailCreated}
         hargaGmail={stats.gmailPrice || 4500}
         isBalanceHidden={isBalanceHidden}
@@ -267,7 +315,7 @@ export default function DashboardOverviewPage() {
 
         {/* 3 Section Terpadu: Ekosistem & Likuiditas User (Garis Tengah Sejajar) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-1">
-          {/* Section 1: Pengguna & Aktivitas Penarikan */}
+          {/* Section 1: Pengguna & Jumlah User Aktif */}
           <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col hover:border-zinc-700/80 transition-colors">
             <div className="h-[54px] flex flex-col justify-between">
               <div className="flex items-center justify-between text-white">
@@ -285,51 +333,53 @@ export default function DashboardOverviewPage() {
 
             <div className="border-t border-zinc-800/80 pt-3 mt-3.5 flex-1 flex flex-col justify-center space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-white">
-                  <UserCheck className="w-3.5 h-3.5 text-white" />
-                  User Punya Saldo:
+                <span className="flex items-center gap-1.5 text-zinc-300">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  Jumlah User Aktif:
                 </span>
-                <b className="text-white font-mono">
-                  {isBalanceHidden
-                    ? "*** User"
-                    : `${stats.usersWithBalance.toLocaleString("id-ID")} User`}
+                <b className="text-emerald-400 font-mono">
+                  {isLoading ? (
+                    <span className="w-12 h-4 bg-zinc-800 animate-pulse inline-block rounded" />
+                  ) : isBalanceHidden ? (
+                    "*** User"
+                  ) : (
+                    `${(stats.activeUsersCount || 0).toLocaleString("id-ID")} User`
+                  )}
                 </b>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-white">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                  User Tarik Saldo:
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-purple-400 font-mono font-semibold bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 text-[10px]">
-                    {isBalanceHidden ? "*** Tarik" : `${stats.totalWithdrawalTransactions}x Tarik`}
-                  </span>
-                  <span className="text-zinc-600">•</span>
-                  <b className="text-white font-mono">
-                    {isBalanceHidden
-                      ? "*** User"
-                      : `${stats.usersWithdrawnCount.toLocaleString("id-ID")} User`}
-                  </b>
-                </div>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Saldo All User - Saldo Ditarik (Ukuran Font Seimbang & Warna Putih) */}
+          {/* Section 2: Saldo All User (kanan bawah: User Punya Saldo) & Saldo Ditarik (kanan: User Tarik Saldo) */}
           <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col hover:border-zinc-700/80 transition-colors">
             <div className="h-[54px] flex flex-col justify-between">
               <div className="flex items-center justify-between text-white">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-white">Saldo All User</span>
                 <Wallet className="w-4 h-4 text-emerald-400" />
               </div>
-              <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
-                {isLoading ? (
-                  <div className="w-28 h-6 bg-zinc-800 animate-pulse rounded" />
-                ) : isBalanceHidden ? (
-                  "Rp ***"
-                ) : (
-                  `Rp ${stats.totalBalance.toLocaleString("id-ID")}`
-                )}
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
+                  {isLoading ? (
+                    <div className="w-28 h-6 bg-zinc-800 animate-pulse rounded" />
+                  ) : isBalanceHidden ? (
+                    "Rp ***"
+                  ) : (
+                    `Rp ${stats.totalBalance.toLocaleString("id-ID")}`
+                  )}
+                </div>
+                {/* User Punya Saldo dipindahkan ke kanan bawah di saldo all user */}
+                <div className="text-right text-[11px] text-zinc-400 shrink-0">
+                  <span className="text-zinc-500">User Punya Saldo: </span>
+                  <b className="text-white font-mono">
+                    {isLoading ? (
+                      <span className="w-10 h-3 bg-zinc-800 animate-pulse inline-block rounded" />
+                    ) : isBalanceHidden ? (
+                      "*** User"
+                    ) : (
+                      `${stats.usersWithBalance.toLocaleString("id-ID")} User`
+                    )}
+                  </b>
+                </div>
               </div>
             </div>
 
@@ -340,14 +390,32 @@ export default function DashboardOverviewPage() {
                   Saldo Ditarik
                 </span>
               </div>
-              <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
-                {isLoading ? (
-                  <div className="w-24 h-6 bg-zinc-800 animate-pulse rounded" />
-                ) : isBalanceHidden ? (
-                  "Rp ***"
-                ) : (
-                  `Rp ${stats.totalWithdrawn.toLocaleString("id-ID")}`
-                )}
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
+                  {isLoading ? (
+                    <div className="w-24 h-6 bg-zinc-800 animate-pulse rounded" />
+                  ) : isBalanceHidden ? (
+                    "Rp ***"
+                  ) : (
+                    `Rp ${stats.totalWithdrawn.toLocaleString("id-ID")}`
+                  )}
+                </div>
+                {/* User Tarik Saldo dipindahkan ke sebelah kanan saldo ditarik */}
+                <div className="flex items-center gap-1.5 text-[11px] shrink-0">
+                  <span className="text-purple-400 font-mono font-semibold bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 text-[10px]">
+                    {isBalanceHidden ? "*** Tarik" : `${stats.totalWithdrawalTransactions}x Tarik`}
+                  </span>
+                  <span className="text-zinc-600">•</span>
+                  <b className="text-white font-mono">
+                    {isLoading ? (
+                      <span className="w-10 h-3 bg-zinc-800 animate-pulse inline-block rounded" />
+                    ) : isBalanceHidden ? (
+                      "*** User"
+                    ) : (
+                      `${stats.usersWithdrawnCount.toLocaleString("id-ID")} User`
+                    )}
+                  </b>
+                </div>
               </div>
             </div>
           </div>
@@ -399,7 +467,7 @@ export default function DashboardOverviewPage() {
       {/* Main Full-Width Section (Unified Dashboard Tabs) */}
       <div id="dashboard-tabs-section" className="space-y-4">
         <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-          {/* Tab Header (Merged: Transaksi & Daftar Pengguna) */}
+          {/* Tab Header (3 Tab: Daftar Pengguna, Setor Gmail, Transaksi) */}
           <div className="flex flex-wrap items-center justify-between border-b border-zinc-800 px-3 pt-2 pb-0 bg-zinc-950/40 no-scrollbar gap-2">
             <div className="flex items-center gap-1">
               {/* Tab 1: Daftar Pengguna (Sebelah Kiri) */}
@@ -414,12 +482,29 @@ export default function DashboardOverviewPage() {
               >
                 <Users className="w-3.5 h-3.5" />
                 <span>Daftar Pengguna</span>
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300">
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300 font-mono">
                   {stats.totalUsers}
                 </span>
               </button>
 
-              {/* Tab 2: Transaksi (Sebelah Kanan) */}
+              {/* Tab 2: Setor Gmail (Sebelah Kiri Transaksi) */}
+              <button
+                type="button"
+                onClick={() => setActiveTab("deposits")}
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-colors cursor-pointer ${
+                  activeTab === "deposits"
+                    ? "border-sky-500 text-sky-400 bg-zinc-900/60"
+                    : "border-transparent text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Setor Gmail</span>
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300 font-mono">
+                  {stats.totalGmailCreated}
+                </span>
+              </button>
+
+              {/* Tab 3: Transaksi */}
               <button
                 type="button"
                 onClick={() => setActiveTab("transactions")}
@@ -436,7 +521,7 @@ export default function DashboardOverviewPage() {
                     {stats.pendingWithdrawals} WD Pending
                   </span>
                 ) : (
-                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300">
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300 font-mono">
                     {data?.recentTransactions?.length || 0}
                   </span>
                 )}
@@ -629,6 +714,174 @@ export default function DashboardOverviewPage() {
             {/* 2. Tab Daftar Pengguna */}
             {activeTab === "users" && (
               <UsersTab onUserUpdated={handleUserUpdated} />
+            )}
+
+            {/* 3. Tab Setor Gmail (List Setor Gmail: Email, Penyetor, Status Diterima/Dicek/Ditolak) */}
+            {activeTab === "deposits" && (
+              <div className="space-y-4">
+                {/* Search & Filter Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+                  <div className="flex items-center gap-2 flex-1 max-w-md relative">
+                    <Search className="w-4 h-4 absolute left-3 top-2.5 text-zinc-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Cari email Gmail, nama penyetor..."
+                      value={depositSearch}
+                      onChange={(e) => setDepositSearch(e.target.value)}
+                      className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl pl-9 pr-4 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-sky-500/50"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(
+                      [
+                        { id: "all", label: "Semua", count: (data?.recentDeposits || []).length },
+                        { id: "accepted", label: "Diterima", count: stats.gmailDiterima },
+                        { id: "pending", label: "Dicek", count: stats.gmailDicek },
+                        { id: "rejected", label: "Ditolak", count: stats.gmailDitolak },
+                      ] as const
+                    ).map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setDepositStatusFilter(f.id)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                          depositStatusFilter === f.id
+                            ? f.id === "accepted"
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                              : f.id === "pending"
+                              ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                              : f.id === "rejected"
+                              ? "bg-rose-500/20 text-rose-400 border border-rose-500/40"
+                              : "bg-sky-500/20 text-sky-400 border border-sky-500/40"
+                            : "bg-zinc-950 text-zinc-400 hover:text-zinc-200 border border-zinc-800"
+                        }`}
+                      >
+                        <span>{f.label}</span>
+                        <span className="text-[10px] font-mono bg-zinc-800/80 px-1.5 py-0.2 rounded-full">
+                          {f.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Table List Setor Gmail */}
+                <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/40">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-800 bg-zinc-900/60 text-zinc-400 font-semibold uppercase tracking-wider text-[10px]">
+                        <th className="py-2.5 px-3">Gmail Disetor</th>
+                        <th className="py-2.5 px-3">Penyetor Akun</th>
+                        <th className="py-2.5 px-3">Kategori</th>
+                        <th className="py-2.5 px-3">Status Email</th>
+                        <th className="py-2.5 px-3">Waktu Setor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60">
+                      {isLoading ? (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-zinc-500">
+                            <div className="flex items-center justify-center gap-2">
+                              <RefreshCw className="w-4 h-4 animate-spin text-sky-400" />
+                              <span>Memuat list setoran Gmail...</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : filteredDepositsList.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-zinc-500">
+                            Belum ada setoran Gmail yang sesuai filter pada rentang waktu ini.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredDepositsList.map((d: any) => {
+                          const statusStr = (d.status || "").toLowerCase();
+                          const isDiterima = ["accepted", "diterima", "sukses", "approved"].includes(statusStr);
+                          const isDicek = ["pending", "dicek", "proses", "menunggu"].includes(statusStr);
+                          return (
+                            <tr key={d.id} className="hover:bg-zinc-800/30 transition-colors">
+                              {/* Gmail Disetor */}
+                              <td className="py-2.5 px-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono text-zinc-100 font-medium text-xs select-all">
+                                    {d.gmail}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyGmail(d.gmail, d.id)}
+                                    className="p-1 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors cursor-pointer"
+                                    title="Salin Email"
+                                  >
+                                    {copiedGmail === d.id ? (
+                                      <Check className="w-3 h-3 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+
+                              {/* Siapa yang Menyetor */}
+                              <td className="py-2.5 px-3">
+                                <div className="min-w-0">
+                                  <span className="text-zinc-200 font-medium block truncate">
+                                    {d.userName || "Pengguna"}
+                                  </span>
+                                  <span className="text-[10px] text-zinc-500 truncate block">
+                                    {d.userEmail || "-"}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Kategori & Nominal */}
+                              <td className="py-2.5 px-3">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-zinc-900 border border-zinc-800 text-zinc-300">
+                                  {d.categoryLabel || "Gmail Good"}
+                                  <span className="text-emerald-400 font-mono">
+                                    • Rp {Number(d.amount || 4500).toLocaleString("id-ID")}
+                                  </span>
+                                </span>
+                              </td>
+
+                              {/* Status Email: Diterima / Dicek / Ditolak */}
+                              <td className="py-2.5 px-3">
+                                {isDiterima ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                    Diterima
+                                  </span>
+                                ) : isDicek ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                    Dicek
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                                    Ditolak
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Waktu Setor */}
+                              <td className="py-2.5 px-3 text-zinc-400 text-[11px] whitespace-nowrap">
+                                {new Date(d.created_at).toLocaleDateString("id-ID", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )}
           </div>
         </div>

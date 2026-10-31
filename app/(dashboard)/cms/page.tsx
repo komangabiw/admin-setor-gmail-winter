@@ -44,9 +44,9 @@ import { DEFAULT_CONFIG, SiteConfig } from "@/lib/site-config";
 import { adminFetch } from "@/lib/api-client";
 
 type CmsTab =
-  | "pricing"
-  | "rules"
   | "landing"
+  | "rules"
+  | "pricing"
   | "contacts"
   | "features";
 
@@ -60,8 +60,11 @@ export default function CmsPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
-  // Active form tab on the left: also directly dictates the live preview on the right
-  const [activeTab, setActiveTab] = useState<CmsTab>("pricing");
+  // String state untuk input angka agar bisa diketik bebas tanpa panah counter (maks 6 digit)
+  const [numericStrings, setNumericStrings] = useState<Record<string, string>>({});
+
+  // Active form tab on the left: default Landing Page, langsung sinkron ke preview kanan
+  const [activeTab, setActiveTab] = useState<CmsTab>("landing");
 
   // Device switcher for preview
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("mobile");
@@ -83,6 +86,7 @@ export default function CmsPage() {
         const json = await res.json();
         if (json.success && json.config && isMounted) {
           setConfig(json.config);
+          setNumericStrings({});
           setUpdatedAt(json.updatedAt || null);
         }
       } catch (err) {
@@ -128,11 +132,28 @@ export default function CmsPage() {
   const handleReset = () => {
     if (confirm("Kembalikan seluruh konfigurasi ke nilai default awal?")) {
       setConfig(DEFAULT_CONFIG);
+      setNumericStrings({});
     }
   };
 
   const updateField = <K extends keyof SiteConfig>(key: K, value: SiteConfig[K]) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Helper untuk input angka: bebas ketik tanpa panah counter, dibatasi maksimal 6 digit (0 - 999.999)
+  const getNumberValue = (key: keyof SiteConfig): string => {
+    if (numericStrings[key] !== undefined) {
+      return numericStrings[key];
+    }
+    const val = config[key];
+    return typeof val === "number" ? String(val) : "";
+  };
+
+  const handleNumberChange = (key: keyof SiteConfig, raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    setNumericStrings((prev) => ({ ...prev, [key]: digits }));
+    const parsed = digits === "" ? 0 : parseInt(digits, 10);
+    updateField(key, parsed as any);
   };
 
   const handleCopyPreviewPassword = () => {
@@ -160,11 +181,11 @@ export default function CmsPage() {
   }, [previewWithdrawMethod, config]);
 
   const activeTabLabels: Record<CmsTab, string> = {
-    pricing: "Harga & Saldo",
-    rules: "Rules & Generator",
-    landing: "Landing & Banner",
-    contacts: "Kontak & WA",
-    features: "Fitur & Saklar",
+    landing: "Landing Page",
+    rules: "Rules",
+    pricing: "Harga",
+    contacts: "Kontak",
+    features: "Fitur",
   };
 
   if (loading) {
@@ -202,11 +223,11 @@ export default function CmsPage() {
           {/* Form Tabs Navigation - Responsive Grid, No Scrollbar / Slidebar */}
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-1.5 p-1.5 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl">
             {[
-              { key: "pricing", label: "Harga & Saldo", icon: DollarSign },
-              { key: "rules", label: "Rules & Generator", icon: FileText },
-              { key: "landing", label: "Landing & Banner", icon: Megaphone },
-              { key: "contacts", label: "Kontak & WA", icon: Share2 },
-              { key: "features", label: "Fitur & Saklar", icon: ShieldAlert },
+              { key: "landing", label: "Landing Page", icon: Megaphone },
+              { key: "rules", label: "Rules", icon: FileText },
+              { key: "pricing", label: "Harga", icon: DollarSign },
+              { key: "contacts", label: "Kontak", icon: Share2 },
+              { key: "features", label: "Fitur", icon: ShieldAlert },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
@@ -229,265 +250,7 @@ export default function CmsPage() {
           </div>
 
           <form onSubmit={handleSave} className="space-y-5">
-            {/* TAB 1: HARGA & TRANSAKSI */}
-            {activeTab === "pricing" && (
-              <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 space-y-5">
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-emerald-400" />
-                    Pengaturan Harga Beli &amp; Biaya Penarikan
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    Atur harga beli Gmail per akun, minimal withdraw, dan potongan pajak tiap metode e-wallet.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Harga per Gmail Fresh */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Harga Beli Gmail Fresh (Good)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
-                      <input
-                        type="number"
-                        min="1000"
-                        max="50000"
-                        step="100"
-                        value={config.price_per_gmail}
-                        onChange={(e) => updateField("price_per_gmail", Number(e.target.value))}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <p className="text-[10px] text-zinc-500">Harga standar setoran Fresh (Rp 4.500).</p>
-                  </div>
-
-                  {/* Harga per Gmail Bebas */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Harga Beli Gmail Bebas
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
-                      <input
-                        type="number"
-                        min="500"
-                        max="50000"
-                        step="100"
-                        value={config.price_bebas}
-                        onChange={(e) => updateField("price_bebas", Number(e.target.value))}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <p className="text-[10px] text-zinc-500">Harga untuk kategori Gmail bebas/cadangan.</p>
-                  </div>
-
-                  {/* Minimal Withdrawal */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Minimal Penarikan Saldo (Withdraw)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
-                      <input
-                        type="number"
-                        min="1000"
-                        max="100000"
-                        step="1000"
-                        value={config.min_withdrawal}
-                        onChange={(e) => updateField("min_withdrawal", Number(e.target.value))}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <p className="text-[10px] text-zinc-500">Batas bawah pengajuan withdraw di web user.</p>
-                  </div>
-
-                  {/* Pajak GoPay */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Potongan Pajak Transfer GoPay
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="10000"
-                        step="500"
-                        value={config.tax_gopay}
-                        onChange={(e) => updateField("tax_gopay", Number(e.target.value))}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <p className="text-[10px] text-zinc-500">Potongan otomatis penarikan ke GoPay.</p>
-                  </div>
-
-                  {/* Pajak OVO */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Potongan Pajak Transfer OVO
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="10000"
-                        step="500"
-                        value={config.tax_ovo}
-                        onChange={(e) => updateField("tax_ovo", Number(e.target.value))}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <p className="text-[10px] text-zinc-500">Potongan otomatis penarikan ke OVO.</p>
-                  </div>
-
-                  {/* Pajak DANA */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Potongan Pajak Transfer DANA
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="10000"
-                        step="500"
-                        value={config.tax_dana}
-                        onChange={(e) => updateField("tax_dana", Number(e.target.value))}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <p className="text-[10px] text-zinc-500">0 = Bebas biaya admin transfer DANA.</p>
-                  </div>
-
-                  {/* Pajak ShopeePay */}
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Potongan Pajak Transfer ShopeePay
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="10000"
-                        step="500"
-                        value={config.tax_shopeepay}
-                        onChange={(e) => updateField("tax_shopeepay", Number(e.target.value))}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <p className="text-[10px] text-zinc-500">0 = Bebas biaya admin transfer ShopeePay.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: RULES & GENERATOR */}
-            {activeTab === "rules" && (
-              <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 space-y-5">
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-sky-400" />
-                    Rules Setoran &amp; Parameter Generator
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    Atur password default yang wajib dipakai user serta teks aturan 2x2 grid dan detail aturan.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Default Password */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Password Wajib (Default Password)
-                    </label>
-                    <input
-                      type="text"
-                      value={config.default_password}
-                      onChange={(e) => updateField("default_password", e.target.value)}
-                      placeholder="winter1212"
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm font-mono text-emerald-400 focus:outline-none focus:border-emerald-500"
-                    />
-                    <p className="text-[10px] text-zinc-500">
-                      Password wajib yang disalin oleh user saat membuat akun Gmail di web user.
-                    </p>
-                  </div>
-
-                  {/* 4 Cards Ringkas */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-zinc-300">1. Aturan Status</label>
-                      <input
-                        type="text"
-                        value={config.rule_status}
-                        onChange={(e) => updateField("rule_status", e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-zinc-300">2. Aturan Nama Akun</label>
-                      <input
-                        type="text"
-                        value={config.rule_nama}
-                        onChange={(e) => updateField("rule_nama", e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-zinc-300">3. Aturan Usia Akun</label>
-                      <input
-                        type="text"
-                        value={config.rule_usia}
-                        onChange={(e) => updateField("rule_usia", e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-zinc-300">4. Aturan Keamanan</label>
-                      <input
-                        type="text"
-                        value={config.rule_keamanan}
-                        onChange={(e) => updateField("rule_keamanan", e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Detail Aturan (4 baris penjelasan) */}
-                  <div className="space-y-2 pt-2">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      4 Poin Penjelasan Detail Aturan (Dropdown Collapsible)
-                    </label>
-                    {config.rules_detail_text.map((text, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-[11px] font-bold text-zinc-300">
-                          {idx + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={text}
-                          onChange={(e) => {
-                            const newRules = [...config.rules_detail_text];
-                            newRules[idx] = e.target.value;
-                            updateField("rules_detail_text", newRules);
-                          }}
-                          className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 3: LANDING & BANNER */}
+            {/* TAB 1: LANDING PAGE */}
             {activeTab === "landing" && (
               <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 space-y-5">
                 <div>
@@ -496,23 +259,27 @@ export default function CmsPage() {
                     Teks Landing Page &amp; Banner Pengumuman
                   </h3>
                   <p className="text-xs text-zinc-400 mt-1">
-                    Sesuaikan headline besar, subheadline, badge status, dan teks running ticker.
+                    Sesuaikan headline besar, subheadline, badge status, dan teks running ticker (Maks 300 karakter per kolom).
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   {/* Hero Headline 3 Baris */}
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Headline Utama (3 Baris Teks Besar)
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Headline Utama (3 Baris Teks Besar)
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 300 karakter</span>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       <div>
                         <span className="text-[10px] text-zinc-500 block mb-1">Baris 1</span>
                         <input
                           type="text"
+                          maxLength={300}
                           value={config.hero_headline_1}
-                          onChange={(e) => updateField("hero_headline_1", e.target.value)}
+                          onChange={(e) => updateField("hero_headline_1", e.target.value.slice(0, 300))}
                           placeholder="Ubah Akun"
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
                         />
@@ -521,8 +288,9 @@ export default function CmsPage() {
                         <span className="text-[10px] text-zinc-500 block mb-1">Baris 2</span>
                         <input
                           type="text"
+                          maxLength={300}
                           value={config.hero_headline_2}
-                          onChange={(e) => updateField("hero_headline_2", e.target.value)}
+                          onChange={(e) => updateField("hero_headline_2", e.target.value.slice(0, 300))}
                           placeholder="Gmail Jadi"
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
                         />
@@ -531,8 +299,9 @@ export default function CmsPage() {
                         <span className="text-[10px] text-zinc-500 block mb-1">Baris 3 (Gradient Sky)</span>
                         <input
                           type="text"
+                          maxLength={300}
                           value={config.hero_headline_3}
-                          onChange={(e) => updateField("hero_headline_3", e.target.value)}
+                          onChange={(e) => updateField("hero_headline_3", e.target.value.slice(0, 300))}
                           placeholder="Penghasilan"
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-sky-400 font-bold focus:outline-none focus:border-emerald-500"
                         />
@@ -542,26 +311,36 @@ export default function CmsPage() {
 
                   {/* Subheadline */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Subheadline (Penjelasan Singkat Bawah Headline)
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Subheadline (Penjelasan Singkat Bawah Headline)
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        {(config.hero_subheadline || "").length}/300
+                      </span>
+                    </div>
                     <textarea
                       rows={2}
+                      maxLength={300}
                       value={config.hero_subheadline}
-                      onChange={(e) => updateField("hero_subheadline", e.target.value)}
+                      onChange={(e) => updateField("hero_subheadline", e.target.value.slice(0, 300))}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
 
                   {/* Platform Badge */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Micro-Badge Atas Headline
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Micro-Badge Atas Headline
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 300 karakter</span>
+                    </div>
                     <input
                       type="text"
+                      maxLength={300}
                       value={config.platform_badge}
-                      onChange={(e) => updateField("platform_badge", e.target.value)}
+                      onChange={(e) => updateField("platform_badge", e.target.value.slice(0, 300))}
                       placeholder="Platform Setor Gmail Terpercaya 2026"
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
                     />
@@ -569,13 +348,19 @@ export default function CmsPage() {
 
                   {/* Running Marquee Text */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Running Marquee Ticker (Pemisah dengan titik tengah &bull;)
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Running Marquee Ticker (Pemisah dengan titik tengah &bull;)
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        {(config.marquee_text || "").length}/300
+                      </span>
+                    </div>
                     <input
                       type="text"
+                      maxLength={300}
                       value={config.marquee_text}
-                      onChange={(e) => updateField("marquee_text", e.target.value)}
+                      onChange={(e) => updateField("marquee_text", e.target.value.slice(0, 300))}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
@@ -608,13 +393,17 @@ export default function CmsPage() {
 
                     {config.badge_status_active && (
                       <div className="space-y-1.5 animate-fade-down">
-                        <label className="text-[11px] font-semibold text-zinc-300">
-                          Teks Pengumuman Badge
-                        </label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-semibold text-zinc-300">
+                            Teks Pengumuman Badge
+                          </label>
+                          <span className="text-[10px] text-zinc-500 font-mono">Maks 300 karakter</span>
+                        </div>
                         <input
                           type="text"
+                          maxLength={300}
                           value={config.badge_status_text}
-                          onChange={(e) => updateField("badge_status_text", e.target.value)}
+                          onChange={(e) => updateField("badge_status_text", e.target.value.slice(0, 300))}
                           placeholder="Platform sedang dalam tahap pengembangan"
                           className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-amber-300 focus:outline-none focus:border-emerald-500"
                         />
@@ -625,7 +414,310 @@ export default function CmsPage() {
               </div>
             )}
 
-            {/* TAB 4: KONTAK & KOMUNITAS */}
+            {/* TAB 2: RULES */}
+            {activeTab === "rules" && (
+              <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 space-y-5">
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-sky-400" />
+                    Rules Setoran &amp; Parameter Generator
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Atur password default yang wajib dipakai user serta teks aturan 2x2 grid dan detail aturan (Maks 300 karakter per kolom).
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Default Password */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Password Wajib (Default Password)
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 300 karakter</span>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={300}
+                      value={config.default_password}
+                      onChange={(e) => updateField("default_password", e.target.value.slice(0, 300))}
+                      placeholder="winter1212"
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm font-mono text-emerald-400 focus:outline-none focus:border-emerald-500"
+                    />
+                    <p className="text-[10px] text-zinc-500">
+                      Password wajib yang disalin oleh user saat membuat akun Gmail di web user.
+                    </p>
+                  </div>
+
+                  {/* 4 Cards Ringkas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-zinc-300">1. Aturan Status</label>
+                        <span className="text-[10px] text-zinc-500 font-mono">Maks 300</span>
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={config.rule_status}
+                        onChange={(e) => updateField("rule_status", e.target.value.slice(0, 300))}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-zinc-300">2. Aturan Nama Akun</label>
+                        <span className="text-[10px] text-zinc-500 font-mono">Maks 300</span>
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={config.rule_nama}
+                        onChange={(e) => updateField("rule_nama", e.target.value.slice(0, 300))}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-zinc-300">3. Aturan Usia Akun</label>
+                        <span className="text-[10px] text-zinc-500 font-mono">Maks 300</span>
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={config.rule_usia}
+                        onChange={(e) => updateField("rule_usia", e.target.value.slice(0, 300))}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-zinc-300">4. Aturan Keamanan</label>
+                        <span className="text-[10px] text-zinc-500 font-mono">Maks 300</span>
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={config.rule_keamanan}
+                        onChange={(e) => updateField("rule_keamanan", e.target.value.slice(0, 300))}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Detail Aturan (4 baris penjelasan) */}
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        4 Poin Penjelasan Detail Aturan (Dropdown Collapsible)
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 300 per poin</span>
+                    </div>
+                    {config.rules_detail_text.map((text, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-[11px] font-bold text-zinc-300">
+                          {idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          maxLength={300}
+                          value={text}
+                          onChange={(e) => {
+                            const newRules = [...config.rules_detail_text];
+                            newRules[idx] = e.target.value.slice(0, 300);
+                            updateField("rules_detail_text", newRules);
+                          }}
+                          className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: HARGA */}
+            {activeTab === "pricing" && (
+              <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 space-y-5">
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-emerald-400" />
+                    Pengaturan Harga Beli &amp; Biaya Penarikan
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Atur harga beli Gmail per akun, minimal withdraw, dan potongan pajak e-wallet (Isi angka langsung tanpa panah counter, maks 6 digit / 999.999).
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Harga per Gmail Fresh */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Harga Beli Gmail Fresh (Good)
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 6 digit</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="0"
+                        value={getNumberValue("price_per_gmail")}
+                        onChange={(e) => handleNumberChange("price_per_gmail", e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-500">Harga standar setoran Fresh (Rp 4.500).</p>
+                  </div>
+
+                  {/* Harga per Gmail Bebas */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Harga Beli Gmail Bebas
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 6 digit</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="0"
+                        value={getNumberValue("price_bebas")}
+                        onChange={(e) => handleNumberChange("price_bebas", e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-500">Harga untuk kategori Gmail bebas/cadangan.</p>
+                  </div>
+
+                  {/* Minimal Withdrawal */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Minimal Penarikan Saldo (Withdraw)
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 6 digit</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="0"
+                        value={getNumberValue("min_withdrawal")}
+                        onChange={(e) => handleNumberChange("min_withdrawal", e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-500">Batas bawah pengajuan withdraw di web user.</p>
+                  </div>
+
+                  {/* Pajak GoPay */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Potongan Pajak Transfer GoPay
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 6 digit</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="0"
+                        value={getNumberValue("tax_gopay")}
+                        onChange={(e) => handleNumberChange("tax_gopay", e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-500">Potongan otomatis penarikan ke GoPay.</p>
+                  </div>
+
+                  {/* Pajak OVO */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Potongan Pajak Transfer OVO
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 6 digit</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="0"
+                        value={getNumberValue("tax_ovo")}
+                        onChange={(e) => handleNumberChange("tax_ovo", e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-500">Potongan otomatis penarikan ke OVO.</p>
+                  </div>
+
+                  {/* Pajak DANA */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Potongan Pajak Transfer DANA
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 6 digit</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="0"
+                        value={getNumberValue("tax_dana")}
+                        onChange={(e) => handleNumberChange("tax_dana", e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-500">0 = Bebas biaya admin transfer DANA.</p>
+                  </div>
+
+                  {/* Pajak ShopeePay */}
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Potongan Pajak Transfer ShopeePay
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 6 digit</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-bold text-zinc-500">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="0"
+                        value={getNumberValue("tax_shopeepay")}
+                        onChange={(e) => handleNumberChange("tax_shopeepay", e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-500">0 = Bebas biaya admin transfer ShopeePay.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: KONTAK */}
             {activeTab === "contacts" && (
               <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 space-y-5">
                 <div>
@@ -634,22 +726,28 @@ export default function CmsPage() {
                     Tautan Saluran &amp; Kontak Komunitas
                   </h3>
                   <p className="text-xs text-zinc-400 mt-1">
-                    Ubah link saluran WhatsApp resmi dan username Telegram CS tempat pengaduan user dialihkan.
+                    Ubah link saluran WhatsApp resmi dan username Telegram CS tempat pengaduan user dialihkan (Maks 300 karakter).
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   {/* WhatsApp Channel */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      URL Saluran WhatsApp (Channel)
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        URL Saluran WhatsApp (Channel)
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">
+                        {(config.whatsapp_channel_url || "").length}/300
+                      </span>
+                    </div>
                     <div className="relative">
                       <MessageCircle className="w-4 h-4 text-emerald-400 absolute left-3 top-2.5" />
                       <input
                         type="url"
+                        maxLength={300}
                         value={config.whatsapp_channel_url}
-                        onChange={(e) => updateField("whatsapp_channel_url", e.target.value)}
+                        onChange={(e) => updateField("whatsapp_channel_url", e.target.value.slice(0, 300))}
                         placeholder="https://whatsapp.com/channel/..."
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs font-mono text-zinc-100 focus:outline-none focus:border-emerald-500"
                       />
@@ -658,16 +756,23 @@ export default function CmsPage() {
 
                   {/* Telegram Username */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-300">
-                      Username Telegram Admin CS
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        Username Telegram Admin CS
+                      </label>
+                      <span className="text-[10px] text-zinc-500 font-mono">Maks 300 karakter</span>
+                    </div>
                     <div className="relative">
                       <span className="text-xs font-bold text-sky-400 absolute left-3.5 top-2.5">@</span>
                       <input
                         type="text"
+                        maxLength={300}
                         value={config.telegram_admin_username.replace("@", "")}
                         onChange={(e) =>
-                          updateField("telegram_admin_username", e.target.value.replace("@", "").trim())
+                          updateField(
+                            "telegram_admin_username",
+                            e.target.value.replace("@", "").trim().slice(0, 300)
+                          )
                         }
                         placeholder="winterhere"
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-8 pr-3 py-2 text-xs font-mono text-zinc-100 focus:outline-none focus:border-emerald-500"
@@ -681,7 +786,7 @@ export default function CmsPage() {
               </div>
             )}
 
-            {/* TAB 5: FITUR & SAKLAR MAINTENANCE */}
+            {/* TAB 5: FITUR */}
             {activeTab === "features" && (
               <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 space-y-5">
                 <div>
@@ -733,13 +838,19 @@ export default function CmsPage() {
 
                   {config.is_maintenance_mode && (
                     <div className="mt-3.5 space-y-1.5 animate-fade-down pt-3 border-t border-rose-500/30">
-                      <label className="text-[11px] font-semibold text-rose-300">
-                        Pesan Pemeliharaan Untuk Pengguna
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-rose-300">
+                          Pesan Pemeliharaan Untuk Pengguna
+                        </label>
+                        <span className="text-[10px] text-rose-400 font-mono">
+                          {(config.maintenance_message || "").length}/300
+                        </span>
+                      </div>
                       <textarea
                         rows={2}
+                        maxLength={300}
                         value={config.maintenance_message}
-                        onChange={(e) => updateField("maintenance_message", e.target.value)}
+                        onChange={(e) => updateField("maintenance_message", e.target.value.slice(0, 300))}
                         className="w-full bg-zinc-900 border border-rose-500/40 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-rose-400"
                       />
                     </div>

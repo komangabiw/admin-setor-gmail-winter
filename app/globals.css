@@ -106,3 +106,15 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(82, 82, 91, 0.4) transparent;
 }
+
+/* Hilangkan tombol counter / panah atas-bawah pada semua input angka */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
