@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { notifyTicketStatusChange, notifyTicketReply } from "@/lib/telegram";
+import { requireAdminAuth } from "@/lib/security/auth-guard";
+import { sanitizeString } from "@/lib/security/sanitize";
+import { logAuditEvent } from "@/lib/security/audit-logger";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const searchParams = req.nextUrl.searchParams;
     const filterStatus = searchParams.get("status") || "all";
@@ -102,9 +108,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const body = await req.json();
-    const { ticketId, status, note } = body;
+    const ticketId = sanitizeString(body.ticketId, 100);
+    const status = sanitizeString(body.status, 30).toLowerCase();
+    const note = body.note ? sanitizeString(body.note, 500) : "";
 
     if (!ticketId || !status) {
       return NextResponse.json(
@@ -157,6 +168,17 @@ export async function PATCH(req: NextRequest) {
       note
     );
 
+    await logAuditEvent({
+      event: "TICKET_STATUS_CHANGE",
+      severity: "INFO",
+      actorId: auth.user?.id,
+      actorEmail: auth.user?.email,
+      targetId: ticketId,
+      ip: auth.clientIp,
+      country: auth.country,
+      details: { prevStatus: ticket.status, newStatus: status, note },
+    });
+
     return NextResponse.json({
       success: true,
       message: `Status tiket berhasil diubah ke ${status}`,
@@ -171,11 +193,17 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const body = await req.json();
-    const { ticketId, message, adminId, adminName } = body;
+    const ticketId = sanitizeString(body.ticketId, 100);
+    const message = sanitizeString(body.message, 2000);
+    const adminId = auth.user?.id;
+    const adminName = auth.profile?.name || auth.user?.email || "Admin Setor Gmail";
 
-    if (!ticketId || !message?.trim()) {
+    if (!ticketId || !message.trim()) {
       return NextResponse.json(
         { success: false, error: "Pesan balasan tidak boleh kosong" },
         { status: 400 }

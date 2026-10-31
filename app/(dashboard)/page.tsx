@@ -23,6 +23,7 @@ import {
   ArrowDownToLine,
 } from "lucide-react";
 import { Badge, StatusBadge } from "@/components/ui/badge";
+import { adminFetch } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Select, Textarea } from "@/components/ui/input";
@@ -69,7 +70,7 @@ export default function DashboardOverviewPage() {
     else setIsRefreshing(true);
 
     try {
-      const res = await fetch("/api/admin/stats");
+      const res = await adminFetch("/api/admin/stats");
       const json = await res.json();
       if (json.success) {
         setData(json);
@@ -109,7 +110,7 @@ export default function DashboardOverviewPage() {
     setBalanceSuccess(null);
 
     try {
-      const res = await fetch("/api/admin/transactions", {
+      const res = await adminFetch("/api/admin/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -152,7 +153,7 @@ export default function DashboardOverviewPage() {
   const handleUpdateWithdrawal = async (id: string, newStatus: "success" | "rejected") => {
     setIsProcessingWd(id);
     try {
-      const res = await fetch("/api/admin/transactions", {
+      const res = await adminFetch("/api/admin/transactions", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -399,7 +400,7 @@ export default function DashboardOverviewPage() {
       <div id="dashboard-tabs-section" className="space-y-4">
         <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl overflow-hidden shadow-sm">
           {/* Tab Header (Merged: Transaksi & Daftar Pengguna) */}
-          <div className="flex items-center justify-between border-b border-zinc-800 px-3 pt-2 pb-0 bg-zinc-950/40 overflow-x-auto">
+          <div className="flex flex-wrap items-center justify-between border-b border-zinc-800 px-3 pt-2 pb-0 bg-zinc-950/40 no-scrollbar gap-2">
             <div className="flex items-center gap-1">
               {/* Tab 1: Daftar Pengguna (Sebelah Kiri) */}
               <button

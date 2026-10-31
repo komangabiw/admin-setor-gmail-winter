@@ -77,15 +77,22 @@ function AuthCallbackContent() {
 
     const verifyAndRedirect = async (user: any, token?: string) => {
       try {
+        if (token && typeof document !== "undefined") {
+          const isHttps = window.location.protocol === "https:";
+          document.cookie = `sb-access-token=${token}; Path=/; SameSite=Lax${
+            isHttps ? "; Secure" : ""
+          }; max-age=3600`;
+        }
+
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
         };
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
         const res = await fetch("/api/auth/admin-check", {
           method: "POST",
           headers,
-          body: JSON.stringify({ userId: user.id, email: user.email }),
         });
 
         const data = await res.json();

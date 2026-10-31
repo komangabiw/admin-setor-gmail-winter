@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireAdminAuth } from "@/lib/security/auth-guard";
+import { sanitizeString, sanitizeNumber } from "@/lib/security/sanitize";
+import { logAuditEvent } from "@/lib/security/audit-logger";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const searchParams = req.nextUrl.searchParams;
     const search = searchParams.get("search")?.toLowerCase().trim() || "";
@@ -207,9 +213,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const body = await req.json();
-    const { action, userId } = body;
+    const action = sanitizeString(body.action, 50);
+    const userId = sanitizeString(body.userId, 100);
 
     if (!userId) {
       return NextResponse.json(
@@ -220,15 +230,17 @@ export async function PATCH(req: NextRequest) {
 
     // Aksi 1: Edit Saldo
     if (action === "update_balance") {
-      const { newBalance, delta, type, note } = body;
-      const targetBalance = Number(newBalance);
+      const { newBalance, note } = body;
+      const targetBalance = sanitizeNumber(newBalance, 0, 1_000_000_000, -1);
 
-      if (isNaN(targetBalance) || targetBalance < 0) {
+      if (targetBalance < 0) {
         return NextResponse.json(
-          { success: false, error: "Nominal saldo tidak valid" },
+          { success: false, error: "Nominal saldo tidak valid (harus antara Rp 0 - Rp 1.000.000.000)" },
           { status: 400 }
         );
       }
+
+      const cleanNote = sanitizeString(note, 300);
 
       // Check if wallet row exists
       const { data: existingWallet } = await supabaseAdmin
@@ -267,8 +279,20 @@ export async function PATCH(req: NextRequest) {
         type: diff >= 0 ? "deposit" : "withdrawal",
         amount: Math.abs(diff),
         title: diff >= 0 ? "Penambahan Saldo oleh Admin" : "Pengurangan Saldo oleh Admin",
-        description: note || `Penyesuaian saldo manual dari Rp ${oldBalance.toLocaleString("id-ID")} ke Rp ${targetBalance.toLocaleString("id-ID")}`,
+        description: cleanNote || `Penyesuaian saldo manual dari Rp ${oldBalance.toLocaleString("id-ID")} ke Rp ${targetBalance.toLocaleString("id-ID")}`,
         status: "success",
+      });
+
+      // Audit log balance change (CRITICAL action)
+      await logAuditEvent({
+        event: "UPDATE_BALANCE",
+        severity: "CRITICAL",
+        actorId: auth.user?.id,
+        actorEmail: auth.user?.email,
+        targetId: userId,
+        ip: auth.clientIp,
+        country: auth.country,
+        details: { oldBalance, newBalance: targetBalance, note: cleanNote },
       });
 
       return NextResponse.json({
@@ -305,7 +329,7 @@ export async function PATCH(req: NextRequest) {
 
     // Aksi 3: Blokir / Buka Blokir
     if (action === "toggle_block") {
-      const { isBlocked } = body;
+      const isBlocked = !!body.isBlocked;
       try {
         await supabaseAdmin.auth.admin.updateUserById(userId, {
           ban_duration: isBlocked ? "876000h" : "none",
@@ -313,6 +337,17 @@ export async function PATCH(req: NextRequest) {
       } catch (authBanErr) {
         console.warn("Auth ban error (ignorable if not in auth.users):", authBanErr);
       }
+
+      await logAuditEvent({
+        event: "TOGGLE_BLOCK_USER",
+        severity: "WARNING",
+        actorId: auth.user?.id,
+        actorEmail: auth.user?.email,
+        targetId: userId,
+        ip: auth.clientIp,
+        country: auth.country,
+        details: { isBlocked },
+      });
 
       return NextResponse.json({
         success: true,
@@ -337,6 +372,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const searchParams = req.nextUrl.searchParams;
     let userId = searchParams.get("userId");
@@ -348,10 +386,26 @@ export async function DELETE(req: NextRequest) {
       } catch {}
     }
 
+    userId = sanitizeString(userId, 100);
+
     if (!userId) {
       return NextResponse.json(
         { success: false, error: "User ID diperlukan untuk penghapusan" },
         { status: 400 }
+      );
+    }
+
+    // Proteksi: Tidak bisa menghapus akun admin
+    const { data: targetProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("role, email")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (targetProfile?.role === "Admin") {
+      return NextResponse.json(
+        { success: false, error: "Tidak dapat menghapus akun Administrator" },
+        { status: 403 }
       );
     }
 
@@ -374,6 +428,17 @@ export async function DELETE(req: NextRequest) {
     } catch (e) {
       console.warn("Could not delete from auth.users:", e);
     }
+
+    await logAuditEvent({
+      event: "DELETE_USER",
+      severity: "CRITICAL",
+      actorId: auth.user?.id,
+      actorEmail: auth.user?.email,
+      targetId: userId,
+      ip: auth.clientIp,
+      country: auth.country,
+      details: { targetEmail: targetProfile?.email },
+    });
 
     return NextResponse.json({
       success: true,

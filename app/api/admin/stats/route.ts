@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getAdminEmails } from "@/lib/auth-helpers";
+import { requireAdminAuth } from "@/lib/security/auth-guard";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   const startTime = Date.now();
   try {
     // Parallel fetch: profiles, wallets, tickets, transactions, withdrawals

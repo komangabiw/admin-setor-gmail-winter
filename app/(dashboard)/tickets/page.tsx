@@ -25,6 +25,7 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Textarea, Select } from "@/components/ui/input";
+import { adminFetch } from "@/lib/api-client";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ function TicketsContent() {
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (search) params.set("search", search);
 
-      const res = await fetch(`/api/admin/tickets?${params.toString()}`);
+      const res = await adminFetch(`/api/admin/tickets?${params.toString()}`);
       const json = await res.json();
       if (json.success) {
         setTickets(json.tickets || []);
@@ -81,7 +82,7 @@ function TicketsContent() {
   const handleUpdateStatus = async (ticketId: string, newStatus: string, note?: string) => {
     setIsUpdatingStatus(true);
     try {
-      const res = await fetch("/api/admin/tickets", {
+      const res = await adminFetch("/api/admin/tickets", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ticketId, status: newStatus, note }),
@@ -110,7 +111,7 @@ function TicketsContent() {
     setReplySuccess(null);
 
     try {
-      const res = await fetch("/api/admin/tickets", {
+      const res = await adminFetch("/api/admin/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,7 +214,7 @@ function TicketsContent() {
         </div>
 
         {/* Status filter tabs */}
-        <div className="flex items-center gap-1 p-1 bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-1 p-1 bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto no-scrollbar flex-wrap sm:flex-nowrap w-full sm:w-auto">
           {[
             { label: "Semua", value: "all" },
             { label: "Baru", value: "open" },

@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireAdminAuth } from "@/lib/security/auth-guard";
+import { sanitizeString } from "@/lib/security/sanitize";
+import { logAuditEvent } from "@/lib/security/audit-logger";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const searchParams = req.nextUrl.searchParams;
     const filterStatus = searchParams.get("status") || "all";
@@ -118,13 +124,26 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const body = await req.json();
-    const { id, newStatus, adminNote } = body;
+    const id = sanitizeString(body.id, 100);
+    const newStatus = sanitizeString(body.newStatus, 30).toLowerCase();
+    const adminNote = body.adminNote !== undefined ? sanitizeString(body.adminNote, 500) : undefined;
 
     if (!id || !newStatus) {
       return NextResponse.json(
         { success: false, error: "ID dan Status Baru diperlukan" },
+        { status: 400 }
+      );
+    }
+
+    const ALLOWED_STATUSES = ["accepted", "rejected", "pending"];
+    if (!ALLOWED_STATUSES.includes(newStatus)) {
+      return NextResponse.json(
+        { success: false, error: "Status baru tidak valid" },
         { status: 400 }
       );
     }
@@ -195,6 +214,23 @@ export async function PATCH(req: NextRequest) {
         status: "success",
       });
     }
+
+    // Record audit event
+    await logAuditEvent({
+      event: "DEPOSIT_STATUS_CHANGE",
+      severity: "INFO",
+      actorId: auth.user?.id,
+      actorEmail: auth.user?.email,
+      targetId: id,
+      ip: auth.clientIp,
+      country: auth.country,
+      details: {
+        gmail: deposit.gmail,
+        prevStatus,
+        newStatus,
+        adminNote,
+      },
+    });
 
     return NextResponse.json({
       success: true,

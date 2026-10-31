@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/input";
+import { adminFetch } from "@/lib/api-client";
 
 export default function DepositsPage() {
   // Gmail Deposits State
@@ -47,7 +48,7 @@ export default function DepositsPage() {
       if (depositStatusFilter !== "all") params.set("status", depositStatusFilter);
       if (depositSearch) params.set("search", depositSearch);
 
-      const res = await fetch(`/api/admin/deposits?${params.toString()}`);
+      const res = await adminFetch(`/api/admin/deposits?${params.toString()}`);
       const json = await res.json();
       if (json.success) {
         setDeposits(json.deposits || []);
@@ -70,7 +71,7 @@ export default function DepositsPage() {
   const handleUpdateDepositStatus = async (item: any, newStatus: string, customNote?: string) => {
     setIsUpdatingDeposit(true);
     try {
-      const res = await fetch("/api/admin/deposits", {
+      const res = await adminFetch("/api/admin/deposits", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -186,7 +187,7 @@ export default function DepositsPage() {
       {/* Filter Kategori & Pencarian (Pencarian ditaruh dibawah kategori) */}
       <div className="space-y-3">
         {/* Category Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto w-full sm:w-max">
+        <div className="flex items-center gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto no-scrollbar flex-wrap sm:flex-nowrap w-full sm:w-max">
           {[
             { label: "Semua Kategori", value: "all" },
             { label: "Gmail Good (Rp 4.500)", value: "good" },

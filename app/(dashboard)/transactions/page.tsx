@@ -23,6 +23,7 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Select, Textarea } from "@/components/ui/input";
+import { adminFetch } from "@/lib/api-client";
 
 export default function TransactionsPage() {
   // Transactions State
@@ -48,7 +49,7 @@ export default function TransactionsPage() {
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (search) params.set("search", search);
 
-      const res = await fetch(`/api/admin/transactions?${params.toString()}`);
+      const res = await adminFetch(`/api/admin/transactions?${params.toString()}`);
       const json = await res.json();
       if (json.success) {
         setTransactions(json.transactions || []);
@@ -62,7 +63,7 @@ export default function TransactionsPage() {
 
   const fetchUsersList = async () => {
     try {
-      const res = await fetch("/api/admin/users");
+      const res = await adminFetch("/api/admin/users");
       const json = await res.json();
       if (json.success) {
         setUsers(json.users || []);
@@ -86,7 +87,7 @@ export default function TransactionsPage() {
   const handleUpdateStatus = async (item: any, newStatus: string, customNote?: string) => {
     setIsUpdatingStatus(true);
     try {
-      const res = await fetch("/api/admin/transactions", {
+      const res = await adminFetch("/api/admin/transactions", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -150,7 +151,7 @@ export default function TransactionsPage() {
         {/* Filter and Tab Pills */}
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
           {/* Type tabs (Penarikan tanpa (WD)) */}
-          <div className="flex items-center gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto w-full md:w-auto">
+          <div className="flex items-center gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto no-scrollbar flex-wrap md:flex-nowrap w-full md:w-auto">
             {[
               { label: "Semua", value: "all" },
               { label: "Penarikan", value: "withdrawal" },

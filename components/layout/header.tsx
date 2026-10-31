@@ -2,14 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { useAdminAuth } from "@/context/admin-auth-context";
+import { adminFetch } from "@/lib/api-client";
 import Link from "next/link";
 import {
   LogOut,
   ShieldCheck,
+  Settings,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export function Header() {
   const { profile, user, signOut } = useAdminAuth();
+  const pathname = usePathname();
 
   const [integrations, setIntegrations] = useState<{
     supabase: { status: string; latency?: number; project?: string };
@@ -25,7 +29,7 @@ export function Header() {
     let isMounted = true;
     const fetchStatus = async () => {
       try {
-        const res = await fetch("/api/admin/integrations-status");
+        const res = await adminFetch("/api/admin/integrations-status");
         const data = await res.json();
         if (data?.success && data?.integrations && isMounted) {
           setIntegrations(data.integrations);
@@ -66,10 +70,41 @@ export function Header() {
 
         {/* Right side: Integrations & Profile */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-          {/* Status Integrasi Pills */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Supabase DB */}
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 rounded-lg bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-colors text-[11px]">
+          {/* Status Integrasi & CMS (urutan: cloudflare -> supabase -> bot -> cms) */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* 1. Cloudflare Edge */}
+            <div
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-colors text-[11px] shrink-0"
+              title={`Cloudflare Edge: ${integrations.cloudflare.status} (${integrations.cloudflare.latency || 0}ms)`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  integrations.cloudflare.status === "Live"
+                    ? "bg-emerald-500 animate-pulse"
+                    : "bg-rose-500"
+                }`}
+              />
+              <span className="font-medium text-zinc-200 hidden md:inline">Cloudflare Edge</span>
+              <span className="font-medium text-zinc-200 md:hidden text-[10px]">CF</span>
+              <span className="text-[10px] text-zinc-500 font-mono hidden xl:inline">
+                {integrations.cloudflare.latency ? `${integrations.cloudflare.latency}ms` : ""}
+              </span>
+              <span
+                className={`text-[9px] font-semibold px-1 py-0.2 rounded border font-mono hidden sm:inline-block ${
+                  integrations.cloudflare.status === "Live"
+                    ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                    : "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                }`}
+              >
+                {integrations.cloudflare.status}
+              </span>
+            </div>
+
+            {/* 2. Supabase DB */}
+            <div
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-colors text-[11px] shrink-0"
+              title={`Supabase DB: ${integrations.supabase.status} (${integrations.supabase.latency || 0}ms)`}
+            >
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
                   integrations.supabase.status === "Live"
@@ -77,12 +112,13 @@ export function Header() {
                     : "bg-rose-500"
                 }`}
               />
-              <span className="font-medium text-zinc-200">Supabase DB</span>
-              <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">
+              <span className="font-medium text-zinc-200 hidden md:inline">Supabase DB</span>
+              <span className="font-medium text-zinc-200 md:hidden text-[10px]">DB</span>
+              <span className="text-[10px] text-zinc-500 font-mono hidden xl:inline">
                 {integrations.supabase.latency ? `${integrations.supabase.latency}ms` : ""}
               </span>
               <span
-                className={`text-[9px] font-semibold px-1 py-0.2 rounded border font-mono ${
+                className={`text-[9px] font-semibold px-1 py-0.2 rounded border font-mono hidden sm:inline-block ${
                   integrations.supabase.status === "Live"
                     ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
                     : "text-rose-400 bg-rose-500/10 border-rose-500/20"
@@ -92,8 +128,11 @@ export function Header() {
               </span>
             </div>
 
-            {/* Bot Telegram */}
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 rounded-lg bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-colors text-[11px]">
+            {/* 3. Bot Telegram */}
+            <div
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-colors text-[11px] shrink-0"
+              title={`Bot Telegram: ${integrations.telegram.status} (${integrations.telegram.latency || 0}ms)`}
+            >
               <span
                 className={`w-2 h-2 rounded-full shrink-0 ${
                   integrations.telegram.status === "Live"
@@ -101,12 +140,13 @@ export function Header() {
                     : "bg-rose-500"
                 }`}
               />
-              <span className="font-medium text-zinc-200">Bot Telegram</span>
-              <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">
+              <span className="font-medium text-zinc-200 hidden md:inline">Bot Telegram</span>
+              <span className="font-medium text-zinc-200 md:hidden text-[10px]">TG</span>
+              <span className="text-[10px] text-zinc-500 font-mono hidden xl:inline">
                 {integrations.telegram.latency ? `${integrations.telegram.latency}ms` : ""}
               </span>
               <span
-                className={`text-[9px] font-semibold px-1 py-0.2 rounded border font-mono ${
+                className={`text-[9px] font-semibold px-1 py-0.2 rounded border font-mono hidden sm:inline-block ${
                   integrations.telegram.status === "Live"
                     ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
                     : "text-rose-400 bg-rose-500/10 border-rose-500/20"
@@ -116,33 +156,23 @@ export function Header() {
               </span>
             </div>
 
-            {/* Cloudflare Edge */}
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 rounded-lg bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-colors text-[11px]">
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  integrations.cloudflare.status === "Live"
-                    ? "bg-emerald-500 animate-pulse"
-                    : "bg-rose-500"
-                }`}
-              />
-              <span className="font-medium text-zinc-200">Cloudflare Edge</span>
-              <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">
-                {integrations.cloudflare.latency ? `${integrations.cloudflare.latency}ms` : ""}
-              </span>
-              <span
-                className={`text-[9px] font-semibold px-1 py-0.2 rounded border font-mono ${
-                  integrations.cloudflare.status === "Live"
-                    ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                    : "text-rose-400 bg-rose-500/10 border-rose-500/20"
-                }`}
-              >
-                {integrations.cloudflare.status}
-              </span>
-            </div>
+            {/* 4. (Logo) CMS */}
+            <Link
+              href="/cms"
+              className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 ${
+                pathname === "/cms"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-xs font-bold"
+                  : "bg-zinc-900/60 border border-zinc-800/80 text-zinc-300 hover:text-emerald-300 hover:border-zinc-700 hover:bg-zinc-800/40"
+              }`}
+              title="CMS"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>CMS</span>
+            </Link>
           </div>
 
           {/* Profile Pill & Logout (Nama & Email di sebelah kiri tombol logout) */}
-          <div className="flex items-center gap-2.5 pl-2 border-l border-zinc-800">
+          <div className="flex items-center gap-2 pl-2 border-l border-zinc-800 shrink-0">
             <div className="flex items-center gap-2">
               {profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture ? (
                 <img
@@ -164,7 +194,7 @@ export function Header() {
               >
                 {(profile?.name || user?.email || "A").charAt(0).toUpperCase()}
               </div>
-              <div className="flex flex-col text-left max-w-[120px] sm:max-w-[200px]">
+              <div className="hidden lg:flex flex-col text-left max-w-[120px] sm:max-w-[200px]">
                 <span className="text-xs font-semibold text-zinc-200 leading-tight truncate">
                   {profile?.name || "Admin"}
                 </span>

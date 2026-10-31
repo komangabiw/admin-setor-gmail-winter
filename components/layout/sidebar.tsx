@@ -4,12 +4,14 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAdminAuth } from "@/context/admin-auth-context";
+import { adminFetch } from "@/lib/api-client";
 import {
   LayoutDashboard,
   LogOut,
   ShieldCheck,
   ExternalLink,
   X,
+  Settings,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -17,6 +19,12 @@ const NAV_ITEMS = [
     name: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
+    badge: null,
+  },
+  {
+    name: "CMS",
+    href: "/cms",
+    icon: Settings,
     badge: null,
   },
 ];
@@ -52,7 +60,7 @@ export function Sidebar({
     let isMounted = true;
     const fetchStatus = async () => {
       try {
-        const res = await fetch("/api/admin/integrations-status");
+        const res = await adminFetch("/api/admin/integrations-status");
         const data = await res.json();
         if (data?.success && data?.integrations && isMounted) {
           setIntegrations(data.integrations);
@@ -196,6 +204,34 @@ export function Sidebar({
             </div>
 
             <div className="space-y-1.5 px-1 mt-1 text-[11px]">
+              {/* Cloudflare Edge */}
+              <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60 hover:border-zinc-700/60 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      integrations.cloudflare.status === "Live"
+                        ? "bg-emerald-500 animate-pulse"
+                        : "bg-rose-500"
+                    }`}
+                  />
+                  <div>
+                    <p className="font-medium text-zinc-200 text-xs">Cloudflare Edge</p>
+                    <p className="text-[10px] text-zinc-500 font-mono">
+                      admin.setorgmail.com {integrations.cloudflare.latency ? `• ${integrations.cloudflare.latency}ms` : ""}
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border font-mono ${
+                    integrations.cloudflare.status === "Live"
+                      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                      : "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                  }`}
+                >
+                  {integrations.cloudflare.status}
+                </span>
+              </div>
+
               {/* Supabase DB */}
               <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60 hover:border-zinc-700/60 transition-colors">
                 <div className="flex items-center gap-2">
@@ -249,34 +285,6 @@ export function Sidebar({
                   }`}
                 >
                   {integrations.telegram.status}
-                </span>
-              </div>
-
-              {/* Cloudflare Edge */}
-              <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60 hover:border-zinc-700/60 transition-colors">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      integrations.cloudflare.status === "Live"
-                        ? "bg-emerald-500 animate-pulse"
-                        : "bg-rose-500"
-                    }`}
-                  />
-                  <div>
-                    <p className="font-medium text-zinc-200 text-xs">Cloudflare Edge</p>
-                    <p className="text-[10px] text-zinc-500 font-mono">
-                      admin.setorgmail.com {integrations.cloudflare.latency ? `• ${integrations.cloudflare.latency}ms` : ""}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border font-mono ${
-                    integrations.cloudflare.status === "Live"
-                      ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-                      : "text-rose-400 bg-rose-500/10 border-rose-500/20"
-                  }`}
-                >
-                  {integrations.cloudflare.status}
                 </span>
               </div>
             </div>

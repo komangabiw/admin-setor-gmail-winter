@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input, Textarea } from "@/components/ui/input";
+import { adminFetch } from "@/lib/api-client";
 
 type SortField = "created_at" | "balance" | "gmail";
 type SortOrder = "asc" | "desc";
@@ -83,7 +84,7 @@ export const UsersTab = React.memo(function UsersTab({
       if (search) params.set("search", search);
       params.set("limit", limit);
 
-      const res = await fetch(`/api/admin/users?${params.toString()}`);
+      const res = await adminFetch(`/api/admin/users?${params.toString()}`);
       const json = await res.json();
       if (json.success) {
         const sorted = (json.users || []).sort((a: any, b: any) => {
@@ -149,7 +150,7 @@ export const UsersTab = React.memo(function UsersTab({
 
     setIsUpdatingSaldo(true);
     try {
-      const res = await fetch("/api/admin/users", {
+      const res = await adminFetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -197,7 +198,7 @@ export const UsersTab = React.memo(function UsersTab({
     if (!confirm) return;
 
     try {
-      const res = await fetch("/api/admin/users", {
+      const res = await adminFetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

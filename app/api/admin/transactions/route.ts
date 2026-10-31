@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireAdminAuth } from "@/lib/security/auth-guard";
+import { sanitizeString, sanitizeNumber } from "@/lib/security/sanitize";
+import { logAuditEvent } from "@/lib/security/audit-logger";
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const searchParams = req.nextUrl.searchParams;
     const filterType = searchParams.get("type") || "all";
@@ -128,9 +134,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const body = await req.json();
-    const { id, sourceTable, newStatus, adminNote } = body;
+    const id = sanitizeString(body.id, 100);
+    const sourceTable = sanitizeString(body.sourceTable, 50);
+    const newStatus = sanitizeString(body.newStatus, 30).toLowerCase();
+    const adminNote = body.adminNote ? sanitizeString(body.adminNote, 500) : "";
 
     if (!id || !newStatus) {
       return NextResponse.json(
@@ -205,6 +217,17 @@ export async function PATCH(req: NextRequest) {
         }
       }
 
+      await logAuditEvent({
+        event: "WITHDRAWAL_STATUS_CHANGE",
+        severity: "INFO",
+        actorId: auth.user?.id,
+        actorEmail: auth.user?.email,
+        targetId: id,
+        ip: auth.clientIp,
+        country: auth.country,
+        details: { newStatus, adminNote, userId: wd.user_id, amount: wd.amount },
+      });
+
       return NextResponse.json({
         success: true,
         message: `Status penarikan berhasil diubah ke ${newStatus}`,
@@ -233,24 +256,25 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdminAuth(req);
+  if (!auth.authorized) return auth.response!;
+
   try {
     const body = await req.json();
-    const { userId, type, amount, title, description } = body;
+    const userId = sanitizeString(body.userId, 100);
+    const type = sanitizeString(body.type || "deposit", 30);
+    const amount = sanitizeNumber(body.amount, 1, 1_000_000_000, 0);
+    const title = sanitizeString(body.title, 200);
+    const description = sanitizeString(body.description, 500);
 
-    if (!userId || !amount) {
+    if (!userId || amount <= 0) {
       return NextResponse.json(
-        { success: false, error: "User ID dan Nominal wajib diisi" },
+        { success: false, error: "User ID dan Nominal valid (> 0) wajib diisi" },
         { status: 400 }
       );
     }
 
-    const numAmount = Number(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      return NextResponse.json(
-        { success: false, error: "Nominal harus lebih dari 0" },
-        { status: 400 }
-      );
-    }
+    const numAmount = amount;
 
     // Insert transaction
     const { data: tx, error: txErr } = await supabaseAdmin
@@ -293,6 +317,17 @@ export async function POST(req: NextRequest) {
         minimum_withdrawal: 5000,
       });
     }
+
+    await logAuditEvent({
+      event: "UPDATE_BALANCE",
+      severity: "CRITICAL",
+      actorId: auth.user?.id,
+      actorEmail: auth.user?.email,
+      targetId: userId,
+      ip: auth.clientIp,
+      country: auth.country,
+      details: { amount: numAmount, type, title, description },
+    });
 
     return NextResponse.json({
       success: true,

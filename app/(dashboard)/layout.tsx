@@ -16,7 +16,7 @@ export default function DashboardLayout({
         <Header />
 
         {/* Content area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-10">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto pb-10 min-w-0 overflow-x-hidden">
           {children}
         </main>
       </div>

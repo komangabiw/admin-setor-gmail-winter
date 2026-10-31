@@ -39,10 +39,27 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  const syncSessionCookie = (token?: string | null) => {
+    if (typeof document === "undefined") return;
+    const isHttps = window.location.protocol === "https:";
+    if (token) {
+      document.cookie = `sb-access-token=${token}; Path=/; SameSite=Lax${
+        isHttps ? "; Secure" : ""
+      }; max-age=3600`;
+    } else {
+      document.cookie = `sb-access-token=; Path=/; SameSite=Lax${
+        isHttps ? "; Secure" : ""
+      }; max-age=0`;
+    }
+  };
+
   const checkAdminPrivileges = async (currentUser: User, sessionToken?: string) => {
     try {
+      syncSessionCookie(sessionToken);
+
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       };
       if (sessionToken) {
         headers["Authorization"] = `Bearer ${sessionToken}`;
@@ -51,10 +68,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/auth/admin-check", {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          userId: currentUser.id,
-          email: currentUser.email,
-        }),
       });
 
       if (res.ok) {
@@ -182,6 +195,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setIsLoading(true);
+      syncSessionCookie(null);
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);

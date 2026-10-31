@@ -79,3 +79,38 @@ ${replyText}
 
   return sendTelegramMessage(message);
 }
+
+/**
+ * Dispatches real-time security alerts (OWASP A09: Logging & Monitoring)
+ */
+export async function notifySecurityAlert(params: {
+  title: string;
+  severity: "CRITICAL" | "WARNING" | "INFO";
+  action: string;
+  ip: string;
+  country?: string | null;
+  userAgent?: string | null;
+  userId?: string | null;
+  email?: string | null;
+  details?: string | null;
+}) {
+  const icon =
+    params.severity === "CRITICAL"
+      ? "🚨"
+      : params.severity === "WARNING"
+      ? "⚠️"
+      : "🛡️";
+
+  const message = `
+<b>${icon} SECURITY ALERT: ${params.title} [${params.severity}]</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Aksi:</b> <code>${params.action}</code>
+<b>Waktu:</b> <code>${new Date().toISOString()}</code>
+<b>IP Klien:</b> <code>${params.ip}</code> ${params.country ? `(${params.country})` : ""}
+<b>Akun:</b> ${params.email || params.userId || "Anonim / Tidak Terautentikasi"}
+${params.details ? `<b>Detail:</b> <i>${params.details}</i>\n` : ""}${params.userAgent ? `<b>User-Agent:</b> <code>${params.userAgent.substring(0, 100)}</code>\n` : ""}
+<i>Admin Security Watchdog • admin.setorgmail.com</i>
+`.trim();
+
+  return sendTelegramMessage(message);
+}
