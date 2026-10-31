@@ -257,7 +257,7 @@ export default function UserManagementPage() {
           <Search className="w-4 h-4 absolute left-3.5 top-3 text-zinc-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Cari berdasarkan nama, email, e-wallet, kode referral, upline..."
+            placeholder="Cari berdasarkan nama, email, e-wallet, UID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
@@ -309,7 +309,6 @@ export default function UserManagementPage() {
                 <th className="py-3 px-4 border-b border-zinc-800 whitespace-nowrap">Role</th>
                 <th className="py-3 px-4 border-b border-zinc-800 whitespace-nowrap">UID</th>
                 <th className="py-3 px-4 border-b border-zinc-800 whitespace-nowrap">Gmail Disetor</th>
-                <th className="py-3 px-4 border-b border-zinc-800 whitespace-nowrap">Kode Reff / Referral</th>
                 <th className="py-3 px-4 border-b border-zinc-800 whitespace-nowrap">E-Wallet Pengguna</th>
                 <th className="py-3 px-4 border-b border-zinc-800 whitespace-nowrap">Saldo Dompet</th>
                 <th className="py-3 px-4 border-b border-zinc-800 whitespace-nowrap">Status Akun</th>
@@ -320,7 +319,7 @@ export default function UserManagementPage() {
             <tbody className="text-zinc-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-zinc-500 border-b border-zinc-800/80">
+                  <td colSpan={9} className="py-12 text-center text-zinc-500 border-b border-zinc-800/80">
                     <div className="flex flex-col items-center gap-2">
                       <RefreshCw className="w-5 h-5 animate-spin text-emerald-400" />
                       <span>Memuat data pengguna dari Supabase...</span>
@@ -329,7 +328,7 @@ export default function UserManagementPage() {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-zinc-500 border-b border-zinc-800/80">
+                  <td colSpan={9} className="py-12 text-center text-zinc-500 border-b border-zinc-800/80">
                     Tidak ditemukan data pengguna yang cocok.
                   </td>
                 </tr>
@@ -451,28 +450,6 @@ export default function UserManagementPage() {
                       </div>
                     </td>
 
-                    {/* Kode Reff User & Reff Siapa (Upline) */}
-                    <td className="py-3.5 px-4 border-b border-zinc-800/80">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-zinc-500 font-medium">Reff:</span>
-                          <span className="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 text-xs">
-                            {u.referral_code || "-"}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-zinc-400 flex items-center gap-1">
-                          <span className="text-zinc-500">Upline:</span>
-                          {u.referred_by_code ? (
-                            <span className="text-zinc-200 font-mono font-medium">
-                              {u.referred_by_code}
-                              {u.referred_by_user ? ` (${u.referred_by_user.name})` : ""}
-                            </span>
-                          ) : (
-                            <span className="text-zinc-600">- (Organik)</span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
 
                     {/* E-Wallet Pengguna */}
                     <td className="py-3.5 px-4 border-b border-zinc-800/80">

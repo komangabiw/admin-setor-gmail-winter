@@ -25,7 +25,7 @@ function LoginForm() {
     const errorParam = searchParams.get("error");
     if (errorParam === "not_admin") {
       setErrorMessage(
-        "Akses ditolak: Akun Google ini bukan Administrator (komangabiw@gmail.com). Silakan gunakan akun admin yang berwenang."
+        "Akses ditolak: Akun Google ini bukan Administrator. Silakan gunakan akun admin yang berwenang."
       );
     } else if (errorParam === "unauthorized") {
       setErrorMessage("Silakan login dengan akun Administrator resmi untuk melanjutkan.");
@@ -95,7 +95,7 @@ function LoginForm() {
                 Otentikasi Administrator
               </h2>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Login khusus akun Google Admin: <span className="text-emerald-400 font-mono font-medium">komangabiw@gmail.com</span>
+                Login khusus akun Google Admin
               </p>
             </div>
 
@@ -141,17 +141,7 @@ function LoginForm() {
           </div>
         </div>
 
-        {/* Return to public site */}
-        <div className="text-center mt-6">
-          <a
-            href="https://setorgmail.com"
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
-          >
-            ← Kembali ke Website Utama Setor Gmail
-          </a>
-        </div>
+
       </div>
     </div>
   );

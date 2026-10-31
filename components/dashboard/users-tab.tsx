@@ -64,7 +64,6 @@ export const UsersTab = React.memo(function UsersTab({
   // Detail User Popup Modal State
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<any>(null);
-  const [copiedCode, setCopiedCode] = useState(false);
   const [copiedUid, setCopiedUid] = useState(false);
   const [copiedUidMap, setCopiedUidMap] = useState<Record<string, boolean>>({});
 
@@ -272,7 +271,7 @@ export const UsersTab = React.memo(function UsersTab({
           <Search className="w-4 h-4 absolute left-3.5 top-2.5 text-zinc-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Cari berdasarkan nama, email, e-wallet, kode referral, upline..."
+            placeholder="Cari berdasarkan nama, email, e-wallet, UID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
@@ -606,7 +605,7 @@ export const UsersTab = React.memo(function UsersTab({
 
             {/* User ID (UID) */}
             <div className="flex items-center justify-between p-3 bg-zinc-950/60 rounded-xl border border-zinc-800/80 text-xs">
-              <span className="text-zinc-400 font-medium">User ID (UID):</span>
+              <span className="text-zinc-400 font-medium">UID:</span>
               <div className="flex items-center gap-1.5">
                 <span className="font-mono text-zinc-300 font-semibold select-all text-[11px] bg-zinc-900/90 px-2 py-0.5 rounded border border-zinc-800">
                   {detailUser.id}
@@ -673,45 +672,6 @@ export const UsersTab = React.memo(function UsersTab({
                     {detailUser.deposits_count?.ditolak || 0}
                   </span>
                 </div>
-              </div>
-            </div>
-
-            {/* Kode Referral & Upline */}
-            <div className="p-3.5 bg-zinc-950/60 rounded-xl border border-zinc-800/80 space-y-2.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Referral & Afiliasi</span>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-zinc-400">Kode Reff Sendiri:</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                    {detailUser.referral_code || "-"}
-                  </span>
-                  {detailUser.referral_code && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (navigator?.clipboard) {
-                          navigator.clipboard.writeText(detailUser.referral_code);
-                          setCopiedCode(true);
-                          setTimeout(() => setCopiedCode(false), 1500);
-                        }
-                      }}
-                      className="p-1 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-                      title="Salin Kode Reff"
-                    >
-                      {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-zinc-400">Upline (Direkrut Oleh):</span>
-                <span className="font-mono text-zinc-200">
-                  {detailUser.referred_by_code ? (
-                    `${detailUser.referred_by_code} ${detailUser.referred_by_user?.name ? `(${detailUser.referred_by_user.name})` : ""}`
-                  ) : (
-                    <span className="text-zinc-500">- (Organik)</span>
-                  )}
-                </span>
               </div>
             </div>
 
