@@ -410,7 +410,11 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Delete user data from tables
-    await supabaseAdmin.from("support_tickets").delete().eq("user_id", userId);
+    try {
+      await supabaseAdmin.from("support_tickets").delete().eq("user_id", userId);
+    } catch {
+      // table might not exist
+    }
     await supabaseAdmin.from("transactions").delete().eq("user_id", userId);
     await supabaseAdmin.from("withdrawals").delete().eq("user_id", userId);
     await supabaseAdmin.from("deposits").delete().eq("user_id", userId);

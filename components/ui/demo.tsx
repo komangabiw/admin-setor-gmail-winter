@@ -105,7 +105,7 @@ export function LineChart9({
   className = '',
   onRefresh,
   isRefreshing,
-  timeframe = '7D',
+  timeframe = 'All',
   onTimeframeChange,
   gmailDisetor,
   hargaGmail,
@@ -123,7 +123,7 @@ export function LineChart9({
   onToggleHideBalance?: () => void;
 }) {
   const [selectedMetric, setSelectedMetric] = useState<'setor' | 'pengeluaran'>('setor');
-  const [internalTimeframe, setInternalTimeframe] = useState<string>('7D');
+  const [internalTimeframe, setInternalTimeframe] = useState<string>('All');
 
   const activeTimeframe = timeframe || internalTimeframe;
   const handleTimeframeSelect = (period: string) => {

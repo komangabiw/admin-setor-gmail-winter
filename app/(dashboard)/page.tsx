@@ -35,7 +35,7 @@ export default function DashboardOverviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"users" | "deposits" | "transactions">("users");
-  const [timeframe, setTimeframe] = useState<string>("7D");
+  const [timeframe, setTimeframe] = useState<string>("All");
   const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("admin_hide_balance") === "true";
@@ -105,7 +105,7 @@ export default function DashboardOverviewPage() {
   }, [timeframe]);
 
   useEffect(() => {
-    fetchStats(true, "7D");
+    fetchStats(true, "All");
   }, []);
 
   const scrollToTabs = () => {
@@ -214,6 +214,7 @@ export default function DashboardOverviewPage() {
     usersWithdrawnCount: 0,
     totalWithdrawalTransactions: 0,
     totalGmailCreated: 0,
+    allTimeGmailCreated: 0,
     gmailDiterima: 0,
     gmailDicek: 0,
     gmailDitolak: 0,
@@ -427,13 +428,20 @@ export default function DashboardOverviewPage() {
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-white">Gmail Digenerate</span>
                 <Mail className="w-4 h-4 text-rose-400" />
               </div>
-              <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
-                {isLoading ? (
-                  <div className="w-20 h-6 bg-zinc-800 animate-pulse rounded" />
-                ) : isBalanceHidden ? (
-                  "*** Akun Gmail"
-                ) : (
-                  `${stats.totalGmailCreated.toLocaleString("id-ID")} Akun Gmail`
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight leading-none">
+                  {isLoading ? (
+                    <div className="w-20 h-6 bg-zinc-800 animate-pulse rounded" />
+                  ) : isBalanceHidden ? (
+                    "*** Akun Gmail"
+                  ) : (
+                    `${stats.totalGmailCreated.toLocaleString("id-ID")} Akun Gmail`
+                  )}
+                </div>
+                {timeframe !== "All" && stats.totalGmailCreated === 0 && (stats.allTimeGmailCreated || 0) > 0 && !isBalanceHidden && (
+                  <span className="text-[10px] text-zinc-400 font-medium font-mono">
+                    ({stats.allTimeGmailCreated} Total)
+                  </span>
                 )}
               </div>
             </div>
@@ -500,7 +508,7 @@ export default function DashboardOverviewPage() {
                 <Mail className="w-3.5 h-3.5" />
                 <span>Setor Gmail</span>
                 <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-zinc-800 text-zinc-300 font-mono">
-                  {stats.totalGmailCreated}
+                  {stats.allTimeGmailCreated || stats.totalGmailCreated || (data?.recentDeposits || []).length}
                 </span>
               </button>
 
@@ -719,6 +727,25 @@ export default function DashboardOverviewPage() {
             {/* 3. Tab Setor Gmail (List Setor Gmail: Email, Penyetor, Status Diterima/Dicek/Ditolak) */}
             {activeTab === "deposits" && (
               <div className="space-y-4">
+                {/* Fallback Banner jika periode pilihan tidak ada setoran tapi database memiliki data */}
+                {data?.stats?.isDepositsHistoricalFallback && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs text-sky-300">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+                      <span>
+                        Belum ada setoran akun baru dalam rentang <b>{timeframe}</b>. Menampilkan <b>{(data?.recentDeposits || []).length}</b> seluruh riwayat setoran sebelumnya.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTimeframeChange("All")}
+                      className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 text-[11px] font-semibold transition-colors cursor-pointer shrink-0 self-start sm:self-center"
+                    >
+                      Pilih Semua Waktu (All)
+                    </button>
+                  </div>
+                )}
+
                 {/* Search & Filter Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
                   <div className="flex items-center gap-2 flex-1 max-w-md relative">
